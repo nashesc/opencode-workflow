@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Auto-loads project memory into every session — mechanical, not
+  // dependent on the agent remembering to check. Resolves to nothing if
+  // .opencode/memory/ doesn't exist yet (the first /log-decision or
+  // /log-error run creates it, no manual setup needed). Note: this array
+  // does NOT merge with a global `instructions` array if you ever add
+  // one there — OpenCode deep-merges config objects but REPLACES arrays,
+  // so if that ever applies, list everything needed here, not just the
+  // project-specific part.
+  "instructions": [".opencode/memory/*.md"]
+
+  // Project-specific permission overrides go here — ONLY where this
+  // project's stack genuinely differs from the global default. Permission
+  // objects deep-merge with global config, so list just the deltas; you
+  // don't need to restate the commit/push gate or anything else already
+  // set globally.
+  //
+  // Example for a Python project (so the tester agent isn't asked on
+  // every pytest/ruff invocation):
+  //
+  // "permission": {
+  //   "bash": {
+  //     "pytest*": "allow",
+  //     "ruff*": "allow",
+  //     "python -m*": "allow"
+  //   }
+  // }
+}

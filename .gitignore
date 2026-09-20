@@ -1,0 +1,26 @@
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Node & package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Secrets & environment
+*.env
+*.env.*
+!*.env.example
+*.pem
+*.key
+id_rsa*
+*secrets*.json
+
+# OpenCode session scratch files
+.opencode/.session-start
+.opencode/.session-manual-logs
+.opencode/.pending-test-errors
+.opencode/.pending-hook-errors
