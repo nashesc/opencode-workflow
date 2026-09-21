@@ -1,0 +1,88 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "grep *": "allow",
+      "rg *": "allow",
+      "ls *": "allow",
+      "npm *": "allow",
+      "bun *": "allow",
+      "npx *": "allow",
+
+      "git commit*": "ask",
+      "git push*": "ask",
+
+      "rm -rf *": "deny"
+    },
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "*.pem": "deny",
+      "*.key": "deny",
+      "id_rsa*": "deny",
+      "*secrets*.json": "deny"
+    },
+    "external_directory": {
+      "*": "ask",
+      "~/AppData/Local/Temp/**": "allow"
+    },
+    "doom_loop": "ask"
+  },
+
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 8000
+  },
+  "mcp": {
+    "obsidian": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@bitbonsai/mcpvault@latest",
+        "YOUR_OBSIDIAN_VAULT_PATH"
+      ],
+      "enabled": true,
+      "timeout": 20000
+    }
+  },
+
+  "provider": {
+    "omni_route": {
+      "name": "OmniRoute",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "YOUR_API_KEY_HERE"
+      },
+      "models": {
+        "kr/claude-sonnet-4.5": {
+          "name": "Sonnet-4.5"
+        },
+        "antigravity/claude-opus-4-6-thinking": {
+          "name": "Opus-4.6-Thinking"
+        },
+        "antigravity/claude-sonnet-4-6": {
+          "name": "Sonnet-4.6"
+        },
+        "antigravity/gpt-oss-120b-medium": {
+          "name": "GPT-OSS-120B-Medium"
+        },
+        "antigravity/gemini-3.7-flash-high": {
+          "name": "Gemini-3.7-Flash-High"
+        },
+        "antigravity/gemini-3.7-flash-medium": {
+          "name": "Gemini-3.7-Flash-Medium"
+        }
+      }
+    }
+  },
+  "disabled_providers": []
+}

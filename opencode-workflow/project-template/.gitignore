@@ -1,0 +1,5 @@
+# OpenCode session scratch files — transient, never track these
+.opencode/.session-start
+.opencode/.session-manual-logs
+.opencode/.pending-test-errors
+.opencode/.pending-hook-errors
