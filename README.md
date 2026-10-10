@@ -1,4 +1,4 @@
-# OpenCode AI Workflow & Harness
+# OpenCode Workflow
 
 A modular, production-ready AI engineering harness for [OpenCode](https://opencode.ai). Provides a hierarchical configuration model (Global Defaults + Project Template), a specialized subagent swarm, a slash command suite, and a dual-layer hybrid auto-logging memory system with Obsidian Vault integration.
 
@@ -12,7 +12,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
                         │           (~/.config/opencode/)              │
                         │  - Machine-wide non-negotiable safety gates   │
                         │  - 9 Specialized Subagents                   │
-                        │  - 9 Slash Commands                          │
+                        │  - 10 Slash Commands                         │
                         │  - Global Obsidian Vault Memory Protocol     │
                         └──────────────────────┬───────────────────────┘
                                                │
@@ -54,12 +54,14 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 │   │   ├── log-decision.md            # /log-decision (dual-write to project & vault memory)
 │   │   ├── log-error.md               # /log-error (dual-write with status update support)
 │   │   ├── plan.md                    # /plan (triggers planner subagent)
+│   │   ├── publish-workflow.md        # /publish-workflow (sanitized sync to distro)
 │   │   ├── recap.md                   # /recap (surfaces human-readable memory digest)
 │   │   ├── review.md                  # /review (runs read-only code review)
 │   │   ├── security.md                # /security (runs security audit)
 │   │   └── test.md                    # /test (runs test pipeline + error staging)
 │   ├── scripts/                       # PowerShell automation utilities
 │   │   ├── MemoryHelpers.psm1         # Reverse-chronological prepend & project archive
+│   │   ├── Publish-Workflow.ps1       # Distro sync worker (invoked by /publish-workflow)
 │   │   ├── pre-commit.ps1             # Capture-only git pre-commit hook
 │   │   └── VaultArchiveInstructions.md# MCP-based vault archive protocol
 │   ├── skills/                        # Reusable domain skills
@@ -77,7 +79,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 │   ├── .gitignore                     # Ignores session scratch files
 │   ├── tools/token-report/            # Token-report helpers + node:test suite
 │   └── .opencode/
-│       ├── plugins/token-report.js    # Per-response token footer + vault log (auto-discovered)
+│       ├── plugins/token-report.js    # Vault-log-only token totals (auto-discovered, no footer)
 │       ├── commands/tokens.md         # /tokens on-demand usage summary
 │       ├── package.json               # Plugin runtime deps (@opencode-ai/plugin)
 │       └── memory/
@@ -86,6 +88,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 │
 └── docs/                              # Historical design notes & architecture rationale
     └── harness-v2-redesign-notes.md
+├── MANIFEST.md                        # Generated publish manifest (source map + HEAD refs)
 ```
 
 ---

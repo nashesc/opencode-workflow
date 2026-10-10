@@ -10,7 +10,7 @@ Sync the live workflow sources to the `opencode-workflow/` distro copy, sanitize
 - `/publish-workflow` — publish to the default dest root
 - `/publish-workflow <dest-root>` — override dest root (`$1`). Also honors `$PUBLISH_DEST` env (`$1` wins).
 
-**Default dest root:** `<WORKFLOW_DISTRO>`
+**Default dest root:** `<WORKFLOW_DISTRO>\opencode-workflow`
 
 **Procedure:**
 

@@ -153,22 +153,30 @@ try {
         if ($PSCmdlet.ShouldProcess($to, 'publish file')) { Copy-Item -LiteralPath $from -Destination $to -Force }
     }
 
-    # MANIFEST.md (source map + shas + timestamp).
+    # MANIFEST.md (source map + shas + timestamp). Source paths are
+    # relativized to portable roots — machine paths must never reach the distro.
     $lines = @('# Publish manifest', '', '- Generated (UTC): ' + ((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')), '')
-    foreach ($m in $manifest) { $lines += ('- `' + $m.src + '` -> `' + $m.rel + '`') }
+    foreach ($m in $manifest) {
+        $srcPortable = $m.src -replace [regex]::Escape($globalRoot), '~/.config/opencode'
+        $srcPortable = $srcPortable -replace [regex]::Escape($WorkspaceRoot), '<workspace>'
+        $srcPortable = $srcPortable -replace '\\', '/'
+        $lines += ('- `' + $srcPortable + '` -> `' + $m.rel + '`')
+    }
     try {
         $wsSha = (git -C $WorkspaceRoot rev-parse --short HEAD 2>$null); if ($wsSha) { $lines += ('- workspace HEAD: ' + ($wsSha -join '')) }
         $destSha = (git -C $dest rev-parse --short HEAD 2>$null); if ($destSha) { $lines += ('- dest HEAD (before): ' + ($destSha -join '')) }
     } catch {}
     $manifestPath = Join-Path $dest 'MANIFEST.md'
+    $manifestText = ($lines -join "`r`n" + "`r`n")
+    if ($manifestText -match 'C:\\Users\\[A-Za-z]+\\') { throw 'verify FAILED: manifest contains machine path' }
     if ($PSCmdlet.ShouldProcess($manifestPath, 'write manifest')) {
-        Set-Content -LiteralPath $manifestPath -Value ($lines -join "`r`n" + "`r`n") -NoNewline
+        Set-Content -LiteralPath $manifestPath -Value $manifestText -NoNewline
     }
 
     Write-Output ("published $($manifest.Count) files to $dest")
     if (Test-Path -LiteralPath (Join-Path $dest '.git')) { $r = $dest } else { $r = Split-Path -Parent $dest }
     Write-Output '--- git status ---'
-    git -C $r status --short -- opencode-workflow 2>$null; if (-not $?) { git -C $r status --short 2>$null | Select-Object -First 20 }
+    git -C $r status --short 2>$null | Select-Object -First 20
 } finally {
     if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 }
