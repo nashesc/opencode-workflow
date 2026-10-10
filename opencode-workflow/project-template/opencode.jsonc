@@ -16,7 +16,11 @@
   // Verify it once in a fresh session (ask the agent to quote something
   // from decisions.md unprompted) before relying on it. Global AGENTS.md
   // has a prose-backup rule for exactly this case.
-  "instructions": [".opencode/memory/*.md"]
+  //
+  // Explicit file list (not a *.md glob): archive files
+  // (.opencode/memory/*_archive.md) must never auto-load. A glob would
+  // match them and grow context after every archive.
+  "instructions": [".opencode/memory/decisions.md", ".opencode/memory/errors.md"]
 
   // Project-specific permission overrides go here — ONLY where this
   // project's stack genuinely differs from the global default. Permission

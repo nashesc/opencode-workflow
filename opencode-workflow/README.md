@@ -93,7 +93,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 ## Key Features
 
 ### 1. Dual-Layer Memory Architecture
-- **Project Memory (`.opencode/memory/`):** Tracked in git, auto-loaded on every session via `opencode.jsonc` (`instructions: [".opencode/memory/*.md"]`). Uses reverse-chronological order (`YYYY-MM-DD — summary — why`) and auto-archives oldest entries after 50.
+- **Project Memory (`.opencode/memory/`):** Tracked in git, auto-loaded on every session via `opencode.jsonc` (explicit `instructions` file list — never a `*.md` glob, so archive files stay unloaded). Uses reverse-chronological order (`YYYY-MM-DD — summary — why`) and auto-archives oldest entries after 50.
 - **Global Vault Memory (Obsidian via MCP):** Durable knowledge repository surviving across projects (`OpenCode/Memory.md` index + `OpenCode/Projects/<name>/project.md` / `wip.md`, plus `OpenCode/Decisions.md` / `OpenCode/Errors.md`). Syncs automatically through MCP tools and auto-archives at the 50-entry threshold to `*_archive.md`.
 
 ### 2. Hybrid Auto-Logging & Session Lifecycle
@@ -106,7 +106,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 - **Planner & Reviewers:** Decomposes complex feature specs into committable TDD tasks. Specialized domain subagents (`database-engineer`, `architecture-reviewer`, `ux-architect`, `dx-advocate`, `project-expert`, `reviewer`, `security`, `tester`) collaborate to deliver verified solutions.
 
 ### 4. Token Reporting Plugin (optional project-template feature)
-- **Per-response footer:** `.opencode/plugins/token-report.js` appends real SDK token totals (`input+output+reasoning+cache.read+cache.write`) to each assistant response — never estimated.
+- **Vault log only:** `.opencode/plugins/token-report.js` records real SDK token totals per assistant message (no footer injection, no polling).
 - **Vault log:** newest-first `OpenCode/TokenUsage.md` (+ 50-entry archive), path overridable via `TOKEN_USAGE_PATH`.
 - **On-demand summary:** `/tokens` (`.opencode/commands/tokens.md` → `tools/token-report/summary.js`) with bounded trends.
 - **Tests:** `node --test tools/token-report/` (node:test, no framework). File-debug via `TOKEN_REPORT_DEBUG_FILE`.
