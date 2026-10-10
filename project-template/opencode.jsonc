@@ -9,16 +9,35 @@
   // one there — OpenCode deep-merges config objects but REPLACES arrays,
   // so if that ever applies, list everything needed here, not just the
   // project-specific part.
-  "instructions": [".opencode/memory/*.md"]
+  //
+  // Don't treat this as guaranteed to work — `instructions`-array
+  // loading has a real history of silently not reaching the model on
+  // some OpenCode versions/providers (no error, just doesn't happen).
+  // Verify it once in a fresh session (ask the agent to quote something
+  // from decisions.md unprompted) before relying on it. Global AGENTS.md
+  // has a prose-backup rule for exactly this case.
+  //
+  // Explicit file list (not a *.md glob): archive files
+  // (.opencode/memory/*_archive.md) must never auto-load. A glob would
+  // match them and grow context after every archive.
+  "instructions": [".opencode/memory/decisions.md", ".opencode/memory/errors.md"]
 
   // Project-specific permission overrides go here — ONLY where this
   // project's stack genuinely differs from the global default. Permission
   // objects deep-merge with global config, so list just the deltas; you
   // don't need to restate the commit/push gate or anything else already
-  // set globally.
+  // set globally. This — a permission delta here — is the DEFAULT way to
+  // handle a non-JS stack's tester friction; a full `.opencode/agents/
+  // tester.md` override is for when the tester's actual BEHAVIOR needs
+  // to differ, not just its permissions. Don't reach for a full-file
+  // override just to fix an allow-list — that forks the whole agent
+  // definition and stops inheriting any future fixes to the global one.
   //
-  // Example for a Python project (so the tester agent isn't asked on
-  // every pytest/ruff invocation):
+  // Example, for a Python project (so the tester agent isn't asked on
+  // every pytest/ruff invocation). NOTE: if you uncomment this, you must
+  // add a comma after the `]` on the instructions line above — this
+  // block currently has no comma before it because it's commented out,
+  // and this file has no other real content after it either way:
   //
   // "permission": {
   //   "bash": {

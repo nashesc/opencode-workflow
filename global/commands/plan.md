@@ -10,4 +10,6 @@ Invoke the Planner subagent to create a structured, TDD-sequenced implementation
 
 **Output:** Plan folder at `docs/project/plans/YYYY-MM-DD_HHMM_FEATURE_NAME/` with INDEX.md and task files, or inline task specification for trivial single-task features.
 
-Delegate to the `planner` subagent with the provided feature specification.
+Delegate to the `planner` subagent with the provided feature specification:
+
+$ARGUMENTS

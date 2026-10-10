@@ -42,6 +42,8 @@ From the gathered context, build a deduplicated candidate list. For each source:
 
 - **Pending hook errors:** Each line is already formatted — include as-is, type ERROR.
 
+- **WIP/Project updates:** Generate at most one `wip.md` update candidate (`OpenCode/Projects/<name>/wip.md`: objective, status, blockers, exactly one next action) and, only if purpose/stack/verified commands changed, one `project.md` update candidate (`OpenCode/Projects/<name>/project.md`, update `Last verified: <date> <commit>`). Propose each in the same approval format below; write only on approval. Every vault write requires explicit approval.
+
 **Deduplication:** Drop any candidate whose summary is substantially the same as
 an entry in `.session-manual-logs`. Substring match is sufficient.
 

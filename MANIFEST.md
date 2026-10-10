@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-10T01:55:30Z
+2026-10-10T02:30:39Z
 
 
 
@@ -60,6 +60,8 @@
 
 - `C:\Users\Lenovo\.config\opencode\templates\TASK-FORMAT.md` -> `global/templates/TASK-FORMAT.md`
 
+- `C:\Users\Lenovo\.config\opencode\instructions\concise.md` -> `global/instructions/concise.md`
+
 - `C:\Users\Lenovo\.config\opencode\scripts\MemoryHelpers.psm1` -> `global/scripts/MemoryHelpers.psm1`
 
 - `C:\Users\Lenovo\.config\opencode\scripts\pre-commit.ps1` -> `global/scripts/pre-commit.ps1`
@@ -76,4 +78,4 @@
 
 - workspace HEAD: cec84c4
 
-- dest HEAD (before): 8d70bef
+- dest HEAD (before): a53d9e6

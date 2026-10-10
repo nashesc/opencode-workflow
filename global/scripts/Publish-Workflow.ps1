@@ -67,6 +67,10 @@ foreach ($d in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'skills') -Dire
 foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'templates') -File) {
     $manifest += @{ src = $f.FullName; rel = ('global/templates/' + $f.Name) }
 }
+foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'instructions') -Filter '*.md' -File) {
+    if ($f.Name -like '*.bak') { continue }
+    $manifest += @{ src = $f.FullName; rel = ('global/instructions/' + $f.Name) }
+}
 foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'scripts') -File) {
     if ($f.Name -like '*.bak') { continue }
     if ($f.Name -eq 'Publish-Workflow.ps1') { continue } # already listed
