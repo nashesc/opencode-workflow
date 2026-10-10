@@ -26,7 +26,7 @@ function Get-MemoryEntryCount {
         return 0
     }
 
-    $content = Get-Content -LiteralPath $FilePath -Raw
+    $content = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
     if ([string]::IsNullOrWhiteSpace($content)) {
         return 0
     }
@@ -68,7 +68,7 @@ function Add-MemoryEntryTop {
         throw "File not found: $FilePath"
     }
 
-    $content = Get-Content -LiteralPath $FilePath -Raw
+    $content = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
     
     # Find the end of header (first blank line after title, then next blank line after description)
     # Typical structure:
@@ -91,7 +91,7 @@ function Add-MemoryEntryTop {
         $newContent = $header + "`n`n$Entry`n`n" + $existingEntries
     }
 
-    Set-Content -LiteralPath $FilePath -Value $newContent -NoNewline
+    Set-Content -LiteralPath $FilePath -Value $newContent -NoNewline -Encoding UTF8
 }
 
 <#
@@ -139,7 +139,7 @@ function Invoke-MemoryArchive {
             $ArchivePath = Join-Path $dir "${name}_archive${ext}"
         }
 
-        $content = Get-Content -LiteralPath $FilePath -Raw
+        $content = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
         $lines = $content -split '\r?\n'
         
         # Find all entry lines (lines starting with date pattern)
@@ -182,18 +182,18 @@ function Invoke-MemoryArchive {
         if (Test-Path -LiteralPath $ArchivePath) {
             # Append to existing archive
             $archiveAddition = "`n" + ($archivedLines -join "`n")
-            Add-Content -LiteralPath $ArchivePath -Value $archiveAddition -NoNewline
+            Add-Content -LiteralPath $ArchivePath -Value $archiveAddition -NoNewline -Encoding UTF8
         } else {
             # Create new archive with header
             $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FilePath)
             $archiveHeader = "# $baseName Archive`n`nArchived entries (oldest first, append-only). This file is never auto-loaded."
             $archiveContent = $archiveHeader + "`n`n" + ($archivedLines -join "`n")
-            Set-Content -LiteralPath $ArchivePath -Value $archiveContent -NoNewline
+            Set-Content -LiteralPath $ArchivePath -Value $archiveContent -NoNewline -Encoding UTF8
         }
 
         # Rewrite live file with kept entries
         $newContent = $header + "`n" + ($keptLines -join "`n") + "`n"
-        Set-Content -LiteralPath $FilePath -Value $newContent -NoNewline
+        Set-Content -LiteralPath $FilePath -Value $newContent -NoNewline -Encoding UTF8
 
         $archivedCount = $entryIndices.Count - $keepCount
         Write-Host "Archived $archivedCount entries from $(Split-Path -Leaf $FilePath) to $(Split-Path -Leaf $ArchivePath)"

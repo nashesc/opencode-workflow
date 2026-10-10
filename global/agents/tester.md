@@ -26,8 +26,8 @@ global `opencode.jsonc` (agent permissions merge with global; only
 deltas need restating). That means `npm`/`bun`/`npx` are pre-approved
 here the same as everywhere else, and everything else still asks
 (git/npm-family commands keep their name and syntax across shells, so
-this inheritance holds even if the underlying shell differs — see the
-verification note at the top of global `opencode.jsonc`). On a non-JS
+this inheritance holds even if the underlying shell differs — verify with
+`opencode debug config` if inherited permissions ever look wrong). On a non-JS
 project, the default fix is a permission delta in that project's own
 `opencode.jsonc` (e.g. `"pytest*": "allow"`) — see the project template,
 which deep-merges with everything above and needs no changes here. Only

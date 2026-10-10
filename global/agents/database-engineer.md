@@ -6,7 +6,6 @@ temperature: 0.3
 permission:
   read: allow
   edit: deny
-  write: deny
   task:
     "*": deny
   question: allow

@@ -48,7 +48,16 @@ export const TokenReport = async (ctx) => {
       // so the vault never gets duplicate lines.
       if (recorded.get(r.messageID) === r.total) return;
       recorded.set(r.messageID, r.total);
-      if (recorded.size > 1000) recorded.clear();
+      // Bounded LRU: evict the oldest 100 instead of wiping the map, so
+      // dedupe state for recent messages survives past 1000 entries.
+      if (recorded.size > 1000) {
+        const keys = recorded.keys();
+        for (let i = 0; i < 100; i++) {
+          const k = keys.next();
+          if (k.done) break;
+          recorded.delete(k.value);
+        }
+      }
       try { appendReport(r, resolveVaultPath()); } catch (e) { await log("warn", `vault write failed: ${e?.message}`); }
       await log("info", `tokens:${r.total} session=${r.sessionID} msg=${r.messageID}`);
       debugLine({ hook: eventName, ok: true, sessionID: r.sessionID, messageID: r.messageID, total: r.total });

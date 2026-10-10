@@ -1,4 +1,4 @@
----
+﻿---
 description: Sync live workflow to the opencode-workflow distro, sanitized
 agent: general
 subtask: true
@@ -32,7 +32,10 @@ Sync the live workflow sources to the `opencode-workflow/` distro copy, sanitize
    - Never copied: `*.bak`, `node_modules/`, `.session-*`, `.pending-*`, `TokenUsage*.md`, `tools/`, `docs/`, vault content.
 
 3. Sanitize (fail-closed — the script aborts before writing on any hit):
-   - `sk-[A-Za-z0-9]{10,}` → `{env:VAR}` placeholder.
+   - Live key sweep first: `$KEY_PATTERNS` (`sk-…` incl. `sk-or-`/`sk-ant-`
+     forms, `ghp_`/`gho_`, `AIza`, `xox-`, `AKIA`) over live manifest
+     sources — catches classes redaction would otherwise hide.
+   - Staged redaction: matched keys → `{env:VAR}` placeholder.
    - Machine-specific home paths (`C:\Users\<name>`) → distro placeholder (`YOUR_OBSIDIAN_VAULT_PATH` / `<HOME>` per file convention).
    - Drop `*.bak`, session scratch files, token-usage logs.
    - Enforce explicit `instructions` file list (reject `*` globs that would auto-load archives).

@@ -1,4 +1,4 @@
-# Publish-Workflow.ps1 — sync live workflow to the opencode-workflow distro, sanitized.
+﻿# Publish-Workflow.ps1 — sync live workflow to the opencode-workflow distro, sanitized.
 #
 # Worker for the global /publish-workflow command. Copies a FIXED manifest
 # (no globs) from the live roots to the distro, sanitizes, verifies
@@ -29,10 +29,34 @@ function Resolve-DestRoot([string]$override) {
     return $DEFAULT_DEST
 }
 
+# Key classes the sanitizer covers. `sk-` includes `-` in its tail so
+# OpenRouter (`sk-or-v1-…`) and Anthropic (`sk-ant-…`) forms match; the
+# `ghp_`/`AIza`/`xox-`/`AKIA` classes have different prefixes entirely.
+$KEY_PATTERNS = @(
+    'sk-[A-Za-z0-9-]{10,}',
+    'ghp_[A-Za-z0-9]{10,}',
+    'gho_[A-Za-z0-9]{10,}',
+    'AIza[A-Za-z0-9_-]{10,}',
+    'xox[bap]-[A-Za-z0-9-]{10,}',
+    'AKIA[0-9A-Z]{10,}'
+)
+
+function Test-HasKey([string]$raw) {
+    foreach ($p in $KEY_PATTERNS) { if ($raw -match $p) { return $true } }
+    return $false
+}
+
 function Assert-NoSecrets([string]$path) {
-    $raw = Get-Content -LiteralPath $path -Raw
-    if ($raw -match 'sk-[A-Za-z0-9]{10,}') { throw "secret sweep FAILED (api-key pattern): $path" }
+    $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+    if (Test-HasKey $raw) { throw "secret sweep FAILED (api-key pattern): $path" }
     if ($raw -match 'C:\\Users\\[A-Za-z]+\\') { throw "secret sweep FAILED (machine path): $path" }
+}
+
+# Key-only sweep for LIVE sources (no machine-path check: this script's own
+# DEFAULT_DEST legitimately contains one, and it is redacted at stage time).
+function Assert-NoLiveKeys([string]$path) {
+    $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+    if (Test-HasKey $raw) { throw "secret sweep FAILED on live source (key class): $path" }
 }
 
 $dest = Resolve-DestRoot $DestRoot
@@ -86,15 +110,24 @@ foreach ($f in Get-ChildItem -LiteralPath (Join-Path $WorkspaceRoot '.opencode\c
 $manifest += @{ src = (Join-Path $WorkspaceRoot '.opencode\plugins\token-report.js'); rel = 'project-template/.opencode/plugins/token-report.js' }
 
 # Fail-closed guards on LIVE sources: the backfill fixes must be present upstream.
-$livePlan = Get-Content -LiteralPath (Join-Path $globalRoot 'commands\plan.md') -Raw
+$livePlan = Get-Content -LiteralPath (Join-Path $globalRoot 'commands\plan.md') -Raw -Encoding UTF8
 if ($livePlan -notmatch '\$ARGUMENTS') { throw 'guard FAILED: live plan.md lacks $ARGUMENTS — fix live first' }
-$livePlugin = Get-Content -LiteralPath (Join-Path $WorkspaceRoot '.opencode\plugins\token-report.js') -Raw
+$livePlugin = Get-Content -LiteralPath (Join-Path $WorkspaceRoot '.opencode\plugins\token-report.js') -Raw -Encoding UTF8
 if ($livePlugin -match '"experimental\.text\.complete"|PULL_ATTEMPTS|pending\.set|pending\.has') {
     throw 'guard FAILED: live token-report.js still has footer machinery — fix live first'
 }
-$liveJsonc = Get-Content -LiteralPath (Join-Path $WorkspaceRoot 'opencode.jsonc') -Raw
+$liveJsonc = Get-Content -LiteralPath (Join-Path $WorkspaceRoot 'opencode.jsonc') -Raw -Encoding UTF8
 if ($liveJsonc -match '"instructions":\s*\["\.opencode/memory/\*\.md"\]') {
     throw 'guard FAILED: live opencode.jsonc still uses the *.md glob — fix live first'
+}
+
+# Fail-closed key sweep on LIVE manifest sources, BEFORE any redaction.
+# The post-sanitize assert below cannot catch a key class the sanitizer
+# misses (redaction runs first), so live sources are swept here with the
+# same pattern set. Machine paths are excluded: staging redacts them.
+foreach ($m in $manifest) {
+    if (-not (Test-Path -LiteralPath $m.src)) { throw "manifest source missing: $($m.src)" }
+    Assert-NoLiveKeys $m.src
 }
 
 # Stage to temp (never write dest directly).
@@ -113,21 +146,22 @@ try {
     # placeholder (the published copy must not bake in this machine's layout);
     # live files keep their concrete defaults.
     foreach ($f in Get-ChildItem -LiteralPath $stage -Recurse -File) {
-        $raw = Get-Content -LiteralPath $f.FullName -Raw
-        $clean = $raw -replace 'sk-[A-Za-z0-9]{10,}', '{env:REDACTED}'
+        $raw = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8
+        $clean = $raw
+        foreach ($p in $KEY_PATTERNS) { $clean = $clean -replace $p, '{env:REDACTED}' }
         $clean = $clean -replace [regex]::Escape($DEFAULT_DEST), '<WORKFLOW_DISTRO>'
-        if ($clean -ne $raw) { Set-Content -LiteralPath $f.FullName -Value $clean -NoNewline }
+        if ($clean -ne $raw) { Set-Content -LiteralPath $f.FullName -Value $clean -NoNewline -Encoding UTF8 }
     }
 
     # Fail-closed verification over staging.
     foreach ($f in Get-ChildItem -LiteralPath $stage -Recurse -File) { Assert-NoSecrets $f.FullName }
-    $stagedJsonc = Get-Content -LiteralPath (Join-Path $stage 'project-template\opencode.jsonc') -Raw
+    $stagedJsonc = Get-Content -LiteralPath (Join-Path $stage 'project-template\opencode.jsonc') -Raw -Encoding UTF8
     if ($stagedJsonc -match '"instructions":\s*\[[^\]]*\*') { throw 'verify FAILED: staged instructions array contains a glob' }
     $stripped = ($stagedJsonc -split "`r?`n" | Where-Object { $_ -notmatch '^\s*//' }) -join "`n"
     try { $stripped | ConvertFrom-Json | Out-Null } catch { throw "verify FAILED: staged opencode.jsonc does not parse: $_" }
-    $stagedPlan = Get-Content -LiteralPath (Join-Path $stage 'global\commands\plan.md') -Raw
+    $stagedPlan = Get-Content -LiteralPath (Join-Path $stage 'global\commands\plan.md') -Raw -Encoding UTF8
     if ($stagedPlan -notmatch '\$ARGUMENTS') { throw 'verify FAILED: staged plan.md lacks $ARGUMENTS' }
-    $stagedPlugin = Get-Content -LiteralPath (Join-Path $stage 'project-template\.opencode\plugins\token-report.js') -Raw
+    $stagedPlugin = Get-Content -LiteralPath (Join-Path $stage 'project-template\.opencode\plugins\token-report.js') -Raw -Encoding UTF8
     if ($stagedPlugin -match '"experimental\.text\.complete"|PULL_ATTEMPTS|pending\.set|pending\.has') {
         throw 'verify FAILED: staged token-report.js still has footer machinery'
     }
@@ -135,7 +169,7 @@ try {
     # README correction (idempotent guards — skip silently if wording already new).
     $readmePath = Join-Path $dest 'README.md'
     if (($PSCmdlet.ShouldProcess($readmePath, 'README backfill')) -and (Test-Path -LiteralPath $readmePath)) {
-        $readme = Get-Content -LiteralPath $readmePath -Raw
+        $readme = Get-Content -LiteralPath $readmePath -Raw -Encoding UTF8
         $updated = $readme
         $updated = $updated -replace '`instructions: \["\.opencode/memory/\*\.md"\]`', 'explicit `instructions` file list — never a `*.md` glob, so archives stay unloaded'
         $updated = $updated -replace '- \*\*Per-response footer:\*\*[^\r\n]*\r?\n', ('- **Vault log only:** `.opencode/plugins/token-report.js` records real SDK token totals per assistant message (no footer injection, no polling).' + "`r`n")

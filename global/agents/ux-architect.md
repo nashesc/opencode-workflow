@@ -1,12 +1,11 @@
 ---
 name: "ux-architect"
-description: "Frontend task planning — understanding component structure, interaction contracts, and design system requirements before writing tasks that implement UI. Use when the feature spec's Section 6 (Interface & Interaction) needs to be translated into concrete component responsibilities."
+description: "Frontend task planning — understanding component structure, interaction contracts, and design system requirements before writing tasks that implement UI. Use when the feature spec's interface/interaction section needs to be translated into concrete component responsibilities."
 mode: subagent
 temperature: 0.3
 permission:
   read: allow
   edit: deny
-  write: deny
   task:
     "*": deny
   question: allow
@@ -19,7 +18,7 @@ Your role is to translate interface/interaction specifications into concrete fro
 ## When to Use
 
 The Planner delegates to you when:
-- Feature spec has Section 6 (Interface & Interaction)
+- Feature spec has an interface/interaction section
 - New UI components or flows are needed
 - Design system compliance is required
 - State management architecture decisions needed
