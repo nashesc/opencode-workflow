@@ -121,11 +121,13 @@ for /end-session review? It will never block commits. [y/N]
 
 If the user answers y:
 1. Create `.git/hooks/pre-commit` with this content (overwrite if exists).
-   Windows-only — requires `pwsh` or `powershell.exe` (Windows PowerShell
-   5.1). Do not install on macOS/Linux:
+   Prefers the portable Node hook; falls back to the PowerShell one on
+   machines without node. Windows-only paths — adjust on macOS/Linux:
     ```
     #!/bin/sh
-    if command -v pwsh >/dev/null 2>&1; then
+    if command -v node >/dev/null 2>&1; then
+      node "$USERPROFILE/.config/opencode/scripts/pre-commit.js"
+    elif command -v pwsh >/dev/null 2>&1; then
       pwsh -NoProfile -NonInteractive -File "$USERPROFILE/.config/opencode/scripts/pre-commit.ps1"
     else
       powershell.exe -NonInteractive -NoProfile -File "$USERPROFILE/.config/opencode/scripts/pre-commit.ps1"
@@ -138,3 +140,7 @@ If the user answers y:
 If the user answers N or skips: confirm "Hook not installed."
 
 If a hook already exists: skip this offer entirely.
+
+**Secret scanning (optional):** the hook runs `gitleaks protect --staged` when
+`gitleaks` is installed (`winget install gitleaks`), capturing hits for review.
+Without it, the hook prints a one-line skip notice. It never blocks commits.

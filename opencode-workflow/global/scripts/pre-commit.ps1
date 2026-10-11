@@ -1,5 +1,8 @@
 ﻿# pre-commit.ps1 — capture-only git hook for OpenCode memory system
 #
+# LEGACY fallback: pre-commit.js is the canonical portable hook.
+# This script stays for machines without node; behavior is equivalent.
+#
 # Detects the project's test/lint command from its manifest, runs it,
 # and on failure writes up to 3 failure summaries to .opencode/.pending-hook-errors
 # for /end-session to capture. NEVER exits non-zero — this hook never blocks a commit.
@@ -29,6 +32,37 @@ if (-not $projectRoot) {
 
 $pendingFile = Join-Path $projectRoot '.opencode\.pending-hook-errors'
 $timestamp   = (Get-Date).ToString('yyyy-MM-dd')
+$dash = [char]0x2014
+$noBom = [Text.UTF8Encoding]::new($false)
+
+# -- Gitleaks soft-gate ------------------------------------------------------
+# Runs on every commit regardless of project type. Only when gitleaks is
+# installed; warns once and skips otherwise. Findings are captured like
+# test failures. Never blocks (exit stays 0).
+$leaks = Get-Command gitleaks -ErrorAction SilentlyContinue
+if ($leaks) {
+    try {
+        $leakOut = & gitleaks protect --staged --verbose --no-git 2>&1
+        $leakCode = $LASTEXITCODE
+    } catch {
+        $leakCode = 1
+        $leakOut = @("Error running gitleaks: $_")
+    }
+    if ($leakCode -ne 0) {
+        $pendingDir = Split-Path -Parent $pendingFile
+        if (-not (Test-Path -LiteralPath $pendingDir)) {
+            New-Item -ItemType Directory -Path $pendingDir -Force | Out-Null
+        }
+        $leakLines = @($leakOut | Where-Object { $_ -match '\S' } | Select-Object -First 3)
+        foreach ($line in $leakLines) {
+            $cleanLine = ($line -replace '\s+', ' ').Trim()
+            $entry = "$timestamp $dash Pre-commit hook: gitleaks found possible secret $dash $cleanLine"
+            [IO.File]::AppendAllText($pendingFile, $entry + "`r`n", $noBom)
+        }
+    }
+} else {
+    Write-Output 'pre-commit: gitleaks not installed, secret scan skipped (winget install gitleaks to enable)'
+}
 
 # ── Detect project type and build test command ─────────────────────────────
 $testCmd    = $null
@@ -101,8 +135,6 @@ if (-not (Test-Path -LiteralPath $pendingDir)) {
     New-Item -ItemType Directory -Path $pendingDir -Force | Out-Null
 }
 
-$dash = [char]0x2014
-$noBom = [Text.UTF8Encoding]::new($false)
 foreach ($line in $failureLines) {
     $cleanLine = ($line -replace '\s+', ' ').Trim()
     $entry = "$timestamp $dash Pre-commit hook: $testLabel failed $dash $cleanLine"
