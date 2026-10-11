@@ -23,8 +23,8 @@ it and wait for confirmation before writing.
 
 No bash permissions are set above — this agent inherits them from your
 global `opencode.jsonc` (agent permissions merge with global; only
-deltas need restating). That means `npm`/`bun`/`npx` are pre-approved
-here the same as everywhere else, and everything else still asks
+deltas need restating). That means only `npm test*`/`bun test*` are pre-approved
+here the same as everywhere else — bare `npm`/`bun`/`npx` still ask — and everything else still asks
 (git/npm-family commands keep their name and syntax across shells, so
 this inheritance holds even if the underlying shell differs — verify with
 `opencode debug config` if inherited permissions ever look wrong). On a non-JS

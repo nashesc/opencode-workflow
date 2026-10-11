@@ -7,12 +7,17 @@
 function Write-Utf8NoBom {
     param([Parameter(Mandatory = $true)][string]$FilePath,
           [Parameter(Mandatory = $true)][string]$Text)
+    # Resolve first: [IO.File] uses the process directory while Test-Path
+    # uses the provider location -- an absolute path keeps them in agreement.
+    $FilePath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($FilePath)
     [IO.File]::WriteAllText($FilePath, $Text, [Text.UTF8Encoding]::new($false))
 }
 
 function Add-Utf8NoBom {
     param([Parameter(Mandatory = $true)][string]$FilePath,
           [Parameter(Mandatory = $true)][string]$Text)
+    # Same resolution as Write-Utf8NoBom (see above).
+    $FilePath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($FilePath)
     [IO.File]::AppendAllText($FilePath, $Text, [Text.UTF8Encoding]::new($false))
 }
 
@@ -37,6 +42,7 @@ function Get-MemoryEntryCount {
         [string]$FilePath
     )
 
+    $FilePath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($FilePath)
     if (-not (Test-Path -LiteralPath $FilePath)) {
         return 0
     }
@@ -79,6 +85,7 @@ function Add-MemoryEntryTop {
         [string]$Entry
     )
 
+    $FilePath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($FilePath)
     if (-not (Test-Path -LiteralPath $FilePath)) {
         throw "File not found: $FilePath"
     }
@@ -139,6 +146,8 @@ function Invoke-MemoryArchive {
         [string]$ArchivePath = ""
     )
 
+    $FilePath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($FilePath)
+    if ($ArchivePath) { $ArchivePath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ArchivePath) }
     try {
         $count = Get-MemoryEntryCount -FilePath $FilePath
         

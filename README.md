@@ -62,7 +62,8 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 │   ├── scripts/                       # PowerShell automation utilities
 │   │   ├── MemoryHelpers.psm1         # Reverse-chronological prepend & project archive
 │   │   ├── Publish-Workflow.ps1       # Distro sync worker (invoked by /publish-workflow)
-│   │   ├── pre-commit.ps1             # Capture-only git pre-commit hook
+│   │   ├── pre-commit.js              # Git pre-commit hook (portable; findings block)
+│   │   ├── pre-commit.ps1             # Fallback hook for machines without node
 │   │   └── VaultArchiveInstructions.md# MCP-based vault archive protocol
 │   ├── skills/                        # Reusable domain skills
 │   │   ├── review-checklist/SKILL.md  # Quality & architecture checklist
@@ -102,8 +103,8 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 ### 2. Hybrid Auto-Logging & Session Lifecycle
 - `/start-session` — Captures start time and initial git HEAD.
 - `/test` — Automatically stages up to 3 failure summaries into `.opencode/.pending-test-errors`.
-- `pre-commit.ps1` — Capture-only hook that stages test failures to `.opencode/.pending-hook-errors` without blocking commits.
-- `/end-session` — Analyzes git commits, completed tasks, and staged errors; deduplicates against manual logs; presents candidates one-by-one for approval (`(d)ecision`, `(e)rror`, `(s)kip`, `(q)uit`, or inline edit); cleans up scratch files; and offers to install the capture hook.
+- `pre-commit.js` (portable; `pre-commit.ps1` fallback) — stages test failures to `.opencode/.pending-hook-errors` without blocking commits; a gitleaks finding blocks the commit.
+- `/end-session` — Analyzes git commits, completed tasks, and staged errors; deduplicates against manual logs; presents candidates one-by-one for approval (`(d)ecision`, `(e)rror`, `(s)kip`, `(q)uit`, or inline edit); cleans up scratch files; and offers to install the hook.
 
 ### 3. Subagent Swarm
 - **Planner & Reviewers:** Decomposes complex feature specs into committable TDD tasks. Specialized domain subagents (`database-engineer`, `architecture-reviewer`, `ux-architect`, `dx-advocate`, `project-expert`, `reviewer`, `security`, `tester`) collaborate to deliver verified solutions.
@@ -112,7 +113,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 - **Vault log only:** `.opencode/plugins/token-report.js` records real SDK token totals per assistant message (no footer injection, no polling).
 - **Vault log:** newest-first `OpenCode/TokenUsage.md` (+ 50-entry archive), path overridable via `TOKEN_USAGE_PATH`.
 - **On-demand summary:** `/tokens` (`.opencode/commands/tokens.md` → `tools/token-report/summary.js`) with bounded trends.
-- **Tests:** `node --test tools/token-report/` (node:test, no framework). File-debug via `TOKEN_REPORT_DEBUG_FILE`.
+- **Tests:** `node --test "tools/token-report/*.test.js"` (node:test, no framework; the bare directory form fails — pass the glob). File-debug via `TOKEN_REPORT_DEBUG_FILE`.
 
 ---
 
@@ -122,7 +123,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 Copy the `global/` folder contents into your machine's OpenCode config directory:
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell). Back up any existing config first -- -Force overwrites.
 Copy-Item -Path "global\*" -Destination "$env:USERPROFILE\.config\opencode" -Recurse -Force
 ```
 
@@ -154,7 +155,8 @@ directly to the model vendor. Review each provider's ToS before use;
 `disabled_providers` in `opencode.jsonc` switches one off without deleting it.
 
 Optional but recommended: `winget install gitleaks` — the pre-commit hook
-runs a secret scan when it is present and skips with a notice when absent.
+blocks the commit on a secret-scan finding when it is present (test failures
+stay capture-only) and skips with a notice when absent.
 
 ### Step 3: Adopt in Any Project
 Copy `project-template/` into any new or existing project repository. Fill in `AGENTS.md` and commit.

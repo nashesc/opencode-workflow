@@ -43,7 +43,6 @@
       "~/AppData/Local/Temp/**": "allow"
     },
     "doom_loop": "ask",
-    "obsidian_delete_note": "deny",
     "obsidian_delete_*": "deny",
     "obsidian_move_note": "deny",
     "obsidian_move_file": "deny",

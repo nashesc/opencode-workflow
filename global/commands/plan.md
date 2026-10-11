@@ -4,7 +4,7 @@ agent: planner
 subtask: false
 ---
 
-Invoke the Planner subagent to create a structured, TDD-sequenced implementation plan.
+Create a structured, TDD-sequenced implementation plan (runs as the Planner in-process; `subtask: false`).
 
 **Usage:**
 - `/plan "inline feature spec text with acceptance criteria"`
