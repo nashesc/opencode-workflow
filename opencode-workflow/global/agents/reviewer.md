@@ -37,7 +37,8 @@ rubber-stamp an `ask` prompt without reading it closely. Deny-by-default
 with a short, explicit inspection allow-list closes that gap; this agent
 should never need anything outside that list. `git diff`/`git log`/`git
 status` keep the same syntax on any shell OpenCode might select on
-Windows; `grep`/`ls` specifically might not (see global `opencode.jsonc`).
+Windows; `grep`/`ls` specifically might not, depending on which shell
+OpenCode selects (verify with `opencode debug config` if unsure).
 That's not a real limitation for this agent even in the worst case,
 though — the native Read/Grep/Glob tools aren't part of this `bash`
 permission block at all, so inspection still works through them even if

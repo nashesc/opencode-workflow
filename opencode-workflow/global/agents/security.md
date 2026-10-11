@@ -39,6 +39,7 @@ tool; it does nothing to stop a file write attempted via a bash
 one-liner. Deny-by-default with a short, explicit inspection allow-list
 closes that gap; this agent should never need anything outside it.
 `grep`/`ls` specifically might not match on native Windows depending on
-which shell OpenCode selects (see global `opencode.jsonc`) — not a real
+which shell OpenCode selects (verify with `opencode debug config` if
+unsure) — not a real
 limitation here either way, since the native Read/Grep/Glob tools aren't
 gated by this `bash` block and still work regardless.

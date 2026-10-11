@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-11T01:26:18Z
+2026-10-11T02:35:47Z
 
 
 
@@ -64,6 +64,8 @@
 
 - `~/.config/opencode/scripts/MemoryHelpers.psm1` -> `global/scripts/MemoryHelpers.psm1`
 
+- `~/.config/opencode/scripts/pre-commit.js` -> `global/scripts/pre-commit.js`
+
 - `~/.config/opencode/scripts/pre-commit.ps1` -> `global/scripts/pre-commit.ps1`
 
 - `~/.config/opencode/scripts/VaultArchiveInstructions.md` -> `global/scripts/VaultArchiveInstructions.md`
@@ -76,6 +78,4 @@
 
 - `<workspace>/.opencode/plugins/token-report.js` -> `project-template/.opencode/plugins/token-report.js`
 
-- workspace HEAD: fb263e0
-
-- dest HEAD (before): 0921452
+- workspace HEAD: db062a6

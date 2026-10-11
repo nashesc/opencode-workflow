@@ -294,8 +294,10 @@ try {
         $lines += ('- `' + $srcPortable + '` -> `' + $m.rel + '`')
     }
     try {
+        # Workspace HEAD only: proves what was published. The old "dest HEAD
+        # (before)" line is dropped -- it describes pre-publish state and is
+        # stale noise the moment anything commits.
         $wsSha = (git -C $WorkspaceRoot rev-parse --short HEAD 2>$null); if ($wsSha) { $lines += ('- workspace HEAD: ' + ($wsSha -join '')) }
-        $destSha = (git -C $dest rev-parse --short HEAD 2>$null); if ($destSha) { $lines += ('- dest HEAD (before): ' + ($destSha -join '')) }
     } catch {}
     $manifestPath = Join-Path $dest 'MANIFEST.md'
     $manifestText = ($lines -join "`r`n" + "`r`n")
