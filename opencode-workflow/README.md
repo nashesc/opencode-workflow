@@ -127,18 +127,34 @@ Copy-Item -Path "global\*" -Destination "$env:USERPROFILE\.config\opencode" -Rec
 ```
 
 ### Step 2: Configure API Keys & Obsidian MCP
-Open `~/.config/opencode/opencode.jsonc` and configure your LLM providers and Obsidian vault path:
+Never paste keys into `opencode.jsonc`. Set persistent **User** environment
+variables (Windows: Settings > environment variables, or `setx NAME "value"`),
+then reference them — an unset variable resolves to an empty string, so
+verify with `opencode models <provider>` after restarting OpenCode:
 ```jsonc
 {
+  "provider": {
+    "my-gateway": {
+      "options": { "baseURL": "https://gateway.example/v1", "apiKey": "{env:MY_GATEWAY_API_KEY}" }
+    }
+  },
   "mcp": {
     "obsidian": {
       "type": "local",
-      "command": ["npx", "-y", "@bitbonsai/mcpvault@latest", "C:\\path\\to\\your\\Obsidian Vault"],
+      "command": ["npx", "-y", "@bitbonsai/mcpvault@0.16.0", "C:\\path\\to\\your\\Obsidian Vault"],
       "enabled": true
     }
   }
 }
 ```
+
+Third-party gateways and free-model routers have their own Terms of Service
+and data policies — traffic (including prompts) goes through them, not
+directly to the model vendor. Review each provider's ToS before use;
+`disabled_providers` in `opencode.jsonc` switches one off without deleting it.
+
+Optional but recommended: `winget install gitleaks` — the pre-commit hook
+runs a secret scan when it is present and skips with a notice when absent.
 
 ### Step 3: Adopt in Any Project
 Copy `project-template/` into any new or existing project repository. Fill in `AGENTS.md` and commit.
