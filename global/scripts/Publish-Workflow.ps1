@@ -257,6 +257,17 @@ try {
     foreach ($f in Get-ChildItem -LiteralPath $stage -Recurse -File) { Assert-NoSecrets $f.FullName }
     $stagedJsonc = Get-Content -LiteralPath (Join-Path $stage 'project-template\opencode.jsonc') -Raw -Encoding UTF8
     if ($stagedJsonc -match '"instructions":\s*\[[^\]]*\*') { throw 'verify FAILED: staged instructions array contains a glob' }
+    # Published instructions entries must resolve: every relative entry in
+    # dest global/opencode.jsonc must exist under dest/global/.
+    $destGlobal = Get-Content -LiteralPath (Join-Path $dest 'global\opencode.jsonc') -Raw -Encoding UTF8
+    if ($destGlobal -match '"instructions":\s*\[([^\]]*)\]') {
+        foreach ($ie in [regex]::Matches($Matches[1], '"([^"]+)"')) {
+            $ip = $ie.Groups[1].Value
+            if ($ip -match '^~|^[A-Za-z]:|^/') { continue }
+            $ipath = Join-Path $dest ('global\' + ($ip -replace '/', '\'))
+            if (-not (Test-Path -LiteralPath $ipath)) { throw "verify FAILED: published instructions entry missing: $ip" }
+        }
+    } else { throw 'verify FAILED: dest global opencode.jsonc has no instructions array' }
     $stripped = ($stagedJsonc -split "`r?`n" | Where-Object { $_ -notmatch '^\s*//' }) -join "`n"
     try { $stripped | ConvertFrom-Json | Out-Null } catch { throw "verify FAILED: staged opencode.jsonc does not parse: $_" }
     $stagedPlan = Get-Content -LiteralPath (Join-Path $stage 'global\commands\plan.md') -Raw -Encoding UTF8

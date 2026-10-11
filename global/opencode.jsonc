@@ -18,9 +18,7 @@
 
       "rm -rf *": "deny",
 
-      "*.env*": "ask",
-      "*.pem*": "deny",
-      "*.key*": "deny"
+      "*.env*": "ask"
     },
     "read": {
       "*": "allow",
@@ -33,7 +31,7 @@
       "*secrets*.json": "deny"
     },
     "edit": {
-      "*": "ask",
+      "*": "allow",
       "package.json": "ask",
       "opencode.jsonc": "ask",
       ".opencode/**": "ask",
@@ -93,22 +91,28 @@
       },
       "models": {
         "kr/claude-sonnet-4.5": {
-          "name": "Sonnet-4.5"
+          "name": "Sonnet-4.5",
+          "limit": { "context": 200000, "output": 64000 }
         },
         "antigravity/claude-opus-4-6-thinking": {
-          "name": "Opus-4.6-Thinking"
+          "name": "Opus-4.6-Thinking",
+          "limit": { "context": 1000000, "output": 128000 }
         },
         "antigravity/claude-sonnet-4-6": {
-          "name": "Sonnet-4.6"
+          "name": "Sonnet-4.6",
+          "limit": { "context": 1000000, "output": 128000 }
         },
         "antigravity/gpt-oss-120b-medium": {
-          "name": "GPT-OSS-120B-Medium"
+          "name": "GPT-OSS-120B-Medium",
+          "limit": { "context": 131072, "output": 32768 }
         },
         "antigravity/gemini-3.7-flash-high": {
-          "name": "Gemini-3.7-Flash-High"
+          "name": "Gemini-3.7-Flash-High",
+          "limit": { "context": 1000000, "output": 64000 }
         },
         "antigravity/gemini-3.7-flash-medium": {
-          "name": "Gemini-3.7-Flash-Medium"
+          "name": "Gemini-3.7-Flash-Medium",
+          "limit": { "context": 1000000, "output": 64000 }
         }
       }
     }
