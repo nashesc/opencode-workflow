@@ -11,19 +11,18 @@ function handleMessageUpdated(event, opts = {}) {
     const info = event && event.properties && event.properties.info;
     if (!info || typeof info !== "object") return { ok: false, reason: "malformed", line: formatTotalLine(null) };
     if (info.role !== "assistant") return { ok: false, reason: "non-assistant", line: formatTotalLine(null) };
-    // Gate rule: a NON-ZERO total is self-evidently usable data, whether or not
-    // the server sets time.completed (some builds never populate it). Zero or
-    // missing snapshots are interim: skip silently (no line, no vault write, no
-    // seen-mark) so a later event with real counts still gets processed. A
-    // finished event whose tokens are missing/zero is a visible gap -> flag.
+    // Gate rule: record ONLY finished events (time.completed present).
+    // Streaming interim snapshots — even with non-zero totals — are skipped
+    // silently (no line, no vault write) so one message yields exactly one
+    // vault line and /tokens never double-counts. A finished event whose
+    // tokens are missing/zero is a visible gap -> flag.
     const finished = !!(info.time && typeof info.time.completed === "number");
     const total = totalTokens(info.tokens);
-    if (total === null && !finished) return { ok: false, reason: "interim" };
+    if (!finished) return { ok: false, reason: "interim" };
     if (total === null) {
       safeLog(log, "warn", `token-report: tokens unavailable session=${info.sessionID} msg=${info.id}`);
       return { ok: false, reason: "missing-tokens", sessionID: info.sessionID, messageID: info.id, line: formatTotalLine(null) };
     }
-    if (total === 0 && !finished) return { ok: false, reason: "interim" };
     if (total === 0) {
       safeLog(log, "warn", `token-report: zero total on finished message session=${info.sessionID} msg=${info.id}`);
       return { ok: false, reason: "missing-tokens", sessionID: info.sessionID, messageID: info.id, line: formatTotalLine(null) };

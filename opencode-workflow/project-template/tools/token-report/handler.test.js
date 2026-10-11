@@ -1,6 +1,10 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const { handleMessageUpdated } = require("./handler");
+const { appendReport, readEntries } = require("./vault-log");
 
 const assistant = (tokens, time = { created: 1, completed: 2 }) => ({
   type: "message.updated",
@@ -48,12 +52,12 @@ test("malformed event and throwing logger never propagate", () => {
   assert.equal(r.ok, true); // logger failure must not break the report
 });
 
-test("non-zero total without completed time still records (finished marker optional)", () => {
+test("non-zero total without completed time → interim skip (finished-only gate)", () => {
   const ev = assistant({ input: 800, output: 300, reasoning: 100, cache: { read: 30, write: 4 } }, { created: 1 });
   const r = handleMessageUpdated(ev);
-  assert.equal(r.ok, true);
-  assert.equal(r.total, 1234);
-  assert.equal(r.line, "`tokens: 1234`");
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "interim");
+  assert.ok(!("line" in r), "interim carries no display line");
 });
 
 test("missing tokens without completed time → silent interim skip (no line)", () => {
@@ -69,4 +73,18 @@ test("finished event with zero total → visible missing-tokens flag (never 0 li
   assert.equal(r.ok, false);
   assert.equal(r.reason, "missing-tokens");
   assert.equal(r.line, "`tokens unavailable`");
+});
+
+test("interim then final for one message → exactly one vault line (no double-count)", () => {
+  const toks = { input: 800, output: 300, reasoning: 100, cache: { read: 30, write: 4 } };
+  const interim = handleMessageUpdated(assistant(toks, { created: 1 }));
+  assert.equal(interim.ok, false, "interim never records");
+  const fin = handleMessageUpdated(assistant(toks));
+  assert.equal(fin.ok, true);
+  const p = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "token-report-")), "TokenUsage.md");
+  if (interim.ok) appendReport(interim, p);
+  appendReport(fin, p);
+  const entries = readEntries(p);
+  assert.equal(entries.length, 1);
+  assert.ok(entries[0].includes("total:1234"));
 });

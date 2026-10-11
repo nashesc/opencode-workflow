@@ -29,6 +29,8 @@ function readEntries(vaultPath) {
   return text.split("\n").filter((l) => ENTRY_RE.test(l.trim()));
 }
 
+function escapeRegExp(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
 function appendReport(report, vaultPath) {
   try {
     if (!report || report.ok === false || !report.vaultFields) return { ok: false, reason: "skip-not-written" };
@@ -41,6 +43,12 @@ function appendReport(report, vaultPath) {
     } catch {
       entries = [];
     }
+    // Update-in-place by messageID (newest-wins): a streaming interim
+    // followed by its final must not leave two lines for one message —
+    // /tokens sums every line, so duplicates inflate the grand total.
+    // The trailing-boundary guard avoids prefix collisions (m1 vs m10).
+    const idRe = new RegExp(`msg:${escapeRegExp(report.messageID)}(?:\\s|$)`);
+    entries = entries.filter((l) => !idRe.test(l));
     entries.unshift(formatLine(report));
     let overflow = [];
     if (entries.length > MAX_ENTRIES) {

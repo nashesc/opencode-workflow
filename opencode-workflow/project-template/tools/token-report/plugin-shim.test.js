@@ -96,3 +96,42 @@ test("app.log uses body-nested payload per AppLogData (else server 400s)", async
     }
   } finally { delete process.env.TOKEN_USAGE_PATH; }
 });
+
+const evWithId = (id, total) => ({ event: {
+  type: "message.updated",
+  properties: { info: {
+    id, sessionID: "ses_abc", role: "assistant",
+    modelID: "gpt-5", providerID: "openai", cost: 0.001,
+    time: { created: 1, completed: 2 },
+    tokens: { input: total, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  } } } });
+
+test("interim then final for one message leaves exactly one vault line", async () => {
+  const dir = withTempVault();
+  try {
+    const mod = await import(SHIM);
+    const plugin = await mod.TokenReport({ client: { app: { log: async () => {} } }, project: {}, directory: process.cwd() });
+    await plugin.event(evWithId("msg_stream", 650)); // non-zero interim records
+    await plugin.event(evWithId("msg_stream", 720)); // final overwrites in place
+    const lines = fs.readFileSync(path.join(dir, "TokenUsage.md"), "utf8").split("\n").filter((l) => l.includes("msg_stream"));
+    assert.equal(lines.length, 1);
+    assert.ok(lines[0].includes("total:720"), "final total wins");
+  } finally { delete process.env.TOKEN_USAGE_PATH; }
+});
+
+test("dedupe survives past 1000 entries (bounded LRU, no map wipe)", async () => {
+  const dir = withTempVault();
+  try {
+    const infos = [];
+    const mod = await import(SHIM);
+    const plugin = await mod.TokenReport({ client: { app: { log: async (e) => infos.push(e) } }, project: {}, directory: process.cwd() });
+    for (let i = 0; i < 1001; i++) await plugin.event(evWithId(`msg_${i}`, 1000 + i));
+    await plugin.event(evWithId("msg_1000", 2000)); // identical redelivery of the newest
+    // A wiped map would re-record (second info log + second vault write);
+    // the bounded LRU retains the newest entry, so redelivery is skipped.
+    const replays = infos.filter((e) => e?.body?.message?.includes("msg=msg_1000"));
+    assert.equal(replays.length, 1);
+    const lines = fs.readFileSync(path.join(dir, "TokenUsage.md"), "utf8").split("\n").filter((l) => l.includes("msg_1000"));
+    assert.equal(lines.length, 1);
+  } finally { delete process.env.TOKEN_USAGE_PATH; }
+});

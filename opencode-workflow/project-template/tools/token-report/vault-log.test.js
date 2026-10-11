@@ -40,3 +40,25 @@ test("fs failures never throw", () => {
   const r = appendReport(REPORT, "Z:\\definitely\\not\\a\\dir\\\0\\TokenUsage.md");
   assert.equal(r.ok, false);
 });
+
+test("same messageID twice keeps exactly one line with the newest total", () => {
+  const dir = tmp(); const p = path.join(dir, "TokenUsage.md");
+  appendReport(REPORT, p);
+  appendReport({ ...REPORT, total: 2000,
+    vaultFields: { input: 1500, output: 400, reasoning: 50, cacheRead: 30, cacheWrite: 20 } }, p);
+  const entries = readEntries(p);
+  assert.equal(entries.length, 1);
+  assert.ok(entries[0].includes("total:2000"), "newest total wins");
+});
+
+test("messageID prefix collision does not clobber siblings (m1 vs m10)", () => {
+  const dir = tmp(); const p = path.join(dir, "TokenUsage.md");
+  appendReport({ ...REPORT, messageID: "m1" }, p);
+  appendReport({ ...REPORT, messageID: "m10" }, p);
+  appendReport({ ...REPORT, messageID: "m1", total: 99,
+    vaultFields: { input: 90, output: 9, reasoning: 0, cacheRead: 0, cacheWrite: 0 } }, p);
+  const entries = readEntries(p);
+  assert.equal(entries.length, 2);
+  assert.ok(entries.some((l) => /msg:m1(?:\s|$)/.test(l) && l.includes("total:99")), "m1 updated");
+  assert.ok(entries.some((l) => l.includes("msg:m10") && l.includes("total:1234")), "m10 untouched");
+});

@@ -193,6 +193,9 @@ foreach ($f in Get-ChildItem -LiteralPath (Join-Path $WorkspaceRoot '.opencode\c
     $manifest += @{ src = $f.FullName; rel = ('project-template/.opencode/commands/' + $f.Name) }
 }
 $manifest += @{ src = (Join-Path $WorkspaceRoot '.opencode\plugins\token-report.js'); rel = 'project-template/.opencode/plugins/token-report.js' }
+foreach ($f in Get-ChildItem -LiteralPath (Join-Path $WorkspaceRoot 'tools\token-report') -Filter '*.js' -File) {
+    $manifest += @{ src = $f.FullName; rel = ('project-template/tools/token-report/' + $f.Name) }
+}
 
 # Fail-closed guards on LIVE sources: the backfill fixes must be present upstream.
 $livePlan = Get-Content -LiteralPath (Join-Path $globalRoot 'commands\plan.md') -Raw -Encoding UTF8

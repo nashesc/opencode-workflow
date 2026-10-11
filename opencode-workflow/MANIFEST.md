@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-11T02:35:47Z
+2026-10-11T02:45:30Z
 
 
 
@@ -77,5 +77,23 @@
 - `<workspace>/.opencode/commands/tokens.md` -> `project-template/.opencode/commands/tokens.md`
 
 - `<workspace>/.opencode/plugins/token-report.js` -> `project-template/.opencode/plugins/token-report.js`
+
+- `<workspace>/tools/token-report/handler.js` -> `project-template/tools/token-report/handler.js`
+
+- `<workspace>/tools/token-report/handler.test.js` -> `project-template/tools/token-report/handler.test.js`
+
+- `<workspace>/tools/token-report/plugin-shim.test.js` -> `project-template/tools/token-report/plugin-shim.test.js`
+
+- `<workspace>/tools/token-report/summary.js` -> `project-template/tools/token-report/summary.js`
+
+- `<workspace>/tools/token-report/summary.test.js` -> `project-template/tools/token-report/summary.test.js`
+
+- `<workspace>/tools/token-report/tokens.js` -> `project-template/tools/token-report/tokens.js`
+
+- `<workspace>/tools/token-report/tokens.test.js` -> `project-template/tools/token-report/tokens.test.js`
+
+- `<workspace>/tools/token-report/vault-log.js` -> `project-template/tools/token-report/vault-log.js`
+
+- `<workspace>/tools/token-report/vault-log.test.js` -> `project-template/tools/token-report/vault-log.test.js`
 
 - workspace HEAD: db062a6
