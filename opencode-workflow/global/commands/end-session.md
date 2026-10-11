@@ -121,8 +121,8 @@ for /end-session review? It will never block commits. [y/N]
 
 If the user answers y:
 1. Create `.git/hooks/pre-commit` with this content (overwrite if exists).
-   Prefer `pwsh` when installed; fall back to `powershell.exe` (Windows
-   PowerShell 5.1, the tested shell on this machine):
+   Windows-only — requires `pwsh` or `powershell.exe` (Windows PowerShell
+   5.1). Do not install on macOS/Linux:
     ```
     #!/bin/sh
     if command -v pwsh >/dev/null 2>&1; then
@@ -132,9 +132,7 @@ If the user answers y:
     fi
     exit 0
     ```
-2. On Windows/Git-for-Windows the sh.exe in Git's path handles this. On
-   macOS/Linux the same wrapper works if `pwsh` is installed; otherwise the
-   hook is a no-op that still exits 0. Confirm:
+2. On Windows/Git-for-Windows the sh.exe in Git's path handles this. Confirm:
    "Pre-commit hook installed at .git/hooks/pre-commit"
 
 If the user answers N or skips: confirm "Hook not installed."

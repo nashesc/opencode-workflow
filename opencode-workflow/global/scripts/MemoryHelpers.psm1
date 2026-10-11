@@ -1,5 +1,20 @@
-# Memory Helper Functions
+﻿# Memory Helper Functions
 # Shared utilities for reverse-chronological memory with auto-archive
+
+# BOM-free UTF-8 writers. Windows PowerShell 5.1 `Set-Content/Add-Content
+# -Encoding UTF8` stamps a BOM on creation, which then sticks to every
+# memory rewrite. .NET with UTF8Encoding($false) keeps files BOM-free.
+function Write-Utf8NoBom {
+    param([Parameter(Mandatory = $true)][string]$FilePath,
+          [Parameter(Mandatory = $true)][string]$Text)
+    [IO.File]::WriteAllText($FilePath, $Text, [Text.UTF8Encoding]::new($false))
+}
+
+function Add-Utf8NoBom {
+    param([Parameter(Mandatory = $true)][string]$FilePath,
+          [Parameter(Mandatory = $true)][string]$Text)
+    [IO.File]::AppendAllText($FilePath, $Text, [Text.UTF8Encoding]::new($false))
+}
 
 <#
 .SYNOPSIS
@@ -91,7 +106,7 @@ function Add-MemoryEntryTop {
         $newContent = $header + "`n`n$Entry`n`n" + $existingEntries
     }
 
-    Set-Content -LiteralPath $FilePath -Value $newContent -NoNewline -Encoding UTF8
+    Write-Utf8NoBom -FilePath $FilePath -Text $newContent
 }
 
 <#
@@ -182,18 +197,18 @@ function Invoke-MemoryArchive {
         if (Test-Path -LiteralPath $ArchivePath) {
             # Append to existing archive
             $archiveAddition = "`n" + ($archivedLines -join "`n")
-            Add-Content -LiteralPath $ArchivePath -Value $archiveAddition -NoNewline -Encoding UTF8
+            Add-Utf8NoBom -FilePath $ArchivePath -Text $archiveAddition
         } else {
             # Create new archive with header
             $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FilePath)
             $archiveHeader = "# $baseName Archive`n`nArchived entries (oldest first, append-only). This file is never auto-loaded."
             $archiveContent = $archiveHeader + "`n`n" + ($archivedLines -join "`n")
-            Set-Content -LiteralPath $ArchivePath -Value $archiveContent -NoNewline -Encoding UTF8
+            Write-Utf8NoBom -FilePath $ArchivePath -Text $archiveContent
         }
 
         # Rewrite live file with kept entries
         $newContent = $header + "`n" + ($keptLines -join "`n") + "`n"
-        Set-Content -LiteralPath $FilePath -Value $newContent -NoNewline -Encoding UTF8
+        Write-Utf8NoBom -FilePath $FilePath -Text $newContent
 
         $archivedCount = $entryIndices.Count - $keepCount
         Write-Host "Archived $archivedCount entries from $(Split-Path -Leaf $FilePath) to $(Split-Path -Leaf $ArchivePath)"
@@ -204,4 +219,4 @@ function Invoke-MemoryArchive {
     }
 }
 
-Export-ModuleMember -Function Get-MemoryEntryCount, Add-MemoryEntryTop, Invoke-MemoryArchive
+Export-ModuleMember -Function Get-MemoryEntryCount, Add-MemoryEntryTop, Invoke-MemoryArchive, Write-Utf8NoBom, Add-Utf8NoBom

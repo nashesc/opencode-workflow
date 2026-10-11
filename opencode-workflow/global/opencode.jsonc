@@ -1,26 +1,26 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "instructions": ["instructions/concise.md"],
   "permission": {
     "bash": {
       "*": "ask",
       "git status*": "allow",
       "git diff*": "allow",
       "git log*": "allow",
-      "grep *": "allow",
-      "rg *": "allow",
-      "ls *": "allow",
       "npm *": "ask",
       "bun *": "ask",
       "npx *": "ask",
-      "npm run *": "allow",
       "npm test*": "allow",
-      "bun run *": "allow",
       "bun test*": "allow",
 
       "git commit*": "ask",
       "git push*": "ask",
 
-      "rm -rf *": "deny"
+      "rm -rf *": "deny",
+
+      "*.env*": "ask",
+      "*.pem*": "deny",
+      "*.key*": "deny"
     },
     "read": {
       "*": "allow",
@@ -32,11 +32,23 @@
       "id_rsa*": "deny",
       "*secrets*.json": "deny"
     },
+    "edit": {
+      "*": "ask",
+      "package.json": "ask",
+      "opencode.jsonc": "ask",
+      ".opencode/**": "ask",
+      ".opencode/memory/**": "allow",
+      ".git/hooks/**": "ask"
+    },
     "external_directory": {
       "*": "ask",
       "~/AppData/Local/Temp/**": "allow"
     },
-    "doom_loop": "ask"
+    "doom_loop": "ask",
+    "obsidian_delete_note": "deny",
+    "obsidian_delete_*": "deny",
+    "obsidian_move_note": "deny",
+    "obsidian_move_file": "deny"
   },
 
   "compaction": {
@@ -44,13 +56,14 @@
     "prune": true,
     "reserved": 8000
   },
+  "subagent_depth": 2,
   "mcp": {
     "obsidian": {
       "type": "local",
       "command": [
         "npx",
         "-y",
-        "@bitbonsai/mcpvault@latest",
+        "@bitbonsai/mcpvault@0.16.0",
         "YOUR_OBSIDIAN_VAULT_PATH"
       ],
       "enabled": true,
@@ -61,7 +74,7 @@
       "command": [
         "npx",
         "-y",
-        "@playwright/mcp@latest",
+        "@playwright/mcp@0.0.83",
         "--headless",
         "--isolated"
       ],
@@ -100,5 +113,6 @@
       }
     }
   },
-  "disabled_providers": []
+  "disabled_providers": [],
+  "small_model": "groq/llama-3.1-8b-instant"
 }

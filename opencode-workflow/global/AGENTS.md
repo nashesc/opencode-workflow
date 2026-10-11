@@ -32,13 +32,13 @@ Vault: <VAULT_PATH> (set in opencode.jsonc mcp.obsidian.command; mcpvault MCP, o
 Evidence: files read, config reviewed, patterns ID'd. Sections: Goal, Problem, Files, Dependencies, Test plan, Rollback, Evidence. Explicit approval (- [x] Approved) before Build.
 
 ## Feature-Spec TDD Planning
-From spec Section 7:
+From spec acceptance criteria:
 - **Decompose TDD** — each: fail→verify→impl→verify→commit
 - **Unit tests only** — E2E planned separately after
 - **No forced count** — natural decomposition
 - **Feature commit scope** — feat(name): description
 - **Self-contained committable** — working after each commit
-- **All criteria traced** — Section 7 → ≥1 task
+- **All criteria traced** — acceptance criteria → ≥1 task
 - **Skilled-unfamiliar implementer** — explicit refs to files/functions/patterns
 - **Cross-layer contracts** — API types, auth shared backend/frontend
 - **Trivial plans inline** — response not files

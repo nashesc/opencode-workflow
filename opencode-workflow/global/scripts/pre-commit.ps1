@@ -1,4 +1,4 @@
-# pre-commit.ps1 — capture-only git hook for OpenCode memory system
+﻿# pre-commit.ps1 — capture-only git hook for OpenCode memory system
 #
 # Detects the project's test/lint command from its manifest, runs it,
 # and on failure writes up to 3 failure summaries to .opencode/.pending-hook-errors
@@ -102,10 +102,12 @@ if (-not (Test-Path -LiteralPath $pendingDir)) {
 }
 
 $dash = [char]0x2014
+$noBom = [Text.UTF8Encoding]::new($false)
 foreach ($line in $failureLines) {
     $cleanLine = ($line -replace '\s+', ' ').Trim()
     $entry = "$timestamp $dash Pre-commit hook: $testLabel failed $dash $cleanLine"
-    Add-Content -LiteralPath $pendingFile -Value $entry -Encoding UTF8
+    # .NET append: 5.1 Add-Content -Encoding UTF8 stamps a BOM on creation.
+    [IO.File]::AppendAllText($pendingFile, $entry + "`r`n", $noBom)
 }
 
 # Always exit 0 — capture-only, never blocks
