@@ -40,10 +40,15 @@ $KEY_PATTERNS = @(
     '(?<![A-Za-z0-9])sk_live_[A-Za-z0-9]{20,}',
     'ghp_[A-Za-z0-9]{36,}',
     'gho_[A-Za-z0-9]{36,}',
+    'ghu_[A-Za-z0-9]{36,}',
     'github_pat_[A-Za-z0-9_]{60,}',
+    'glpat-[A-Za-z0-9_\-]{20,}',
+    'npm_[A-Za-z0-9]{36,}',
     'ghs_[A-Za-z0-9]{36,}',
+    'rk_live_[A-Za-z0-9]{20,}',
+    'ya29\.[A-Za-z0-9_\-]{20,}',
     'AIza[A-Za-z0-9_\-]{35}',
-    'xox[bap]-?[A-Za-z0-9\-]{20,}',
+    'xox[bapr]-?[A-Za-z0-9\-]{20,}',
     'xoxs-[A-Za-z0-9\-]{20,}',
     'hf_[A-Za-z0-9]{30,}',
     'AKIA[0-9A-Z]{16}'
@@ -99,9 +104,11 @@ function Assert-LiveApiKeyIndirection([string]$path) {
 
 # Drift guard for global/opencode.jsonc (H1 pipeline fix). The distro file
 # stays canonical for providers and is never whole-copied; instead the
-# carried sections (permissions, depth, MCP pins, providers-off list, small
-# model, compaction, instructions) must match live after secret/path
-# normalization. Any divergence fails closed with a manual-sync instruction.
+# carried sections (permissions, depth, MCP pins, providers-off list,
+# compaction, instructions) must match live after secret/path
+# normalization. small_model is deliberately NOT carried: it is a
+# live-machine override, not a shared default. Any divergence fails closed
+# with a manual-sync instruction.
 function Assert-ConfigDrift([string]$livePath, [string]$distroPath) {
     $norm = {
         param([string]$p, [switch]$isLive)
@@ -114,7 +121,6 @@ function Assert-ConfigDrift([string]$livePath, [string]$distroPath) {
             subagent_depth = $j.subagent_depth
             mcp = $j.mcp
             disabled_providers = $j.disabled_providers
-            small_model = $j.small_model
             compaction = $j.compaction
             instructions = $j.instructions
         }
@@ -132,7 +138,7 @@ function Assert-ConfigDrift([string]$livePath, [string]$distroPath) {
         }
         return $s
     }
-    $sections = @('permission', 'subagent_depth', 'mcp', 'disabled_providers', 'small_model', 'compaction', 'instructions')
+    $sections = @('permission', 'subagent_depth', 'mcp', 'disabled_providers', 'compaction', 'instructions')
     $a = &$norm $livePath -isLive
     $b = &$norm $distroPath
     if ($a -ne $b) {
@@ -181,7 +187,10 @@ foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'instructions')
 }
 foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'scripts') -File) {
     if ($f.Name -like '*.bak') { continue }
-    if ($f.Name -like '*.test.ps1') { continue } # dev-only corpus tests: live-only, never published (their synthetic keys would trip the sweep and get redacted)
+    # *.test.ps1 stays live-only by default (synthetic keys would trip the
+    # sweep) -- EXCEPT the sanitizer corpus test, which builds every key at
+    # runtime and is sweep-safe, so it ships as the published contract.
+    if ($f.Name -like '*.test.ps1' -and $f.Name -ne 'Publish-Workflow.sanitizer.test.ps1') { continue }
     if ($f.Name -eq 'Publish-Workflow.ps1') { continue } # already listed
     $manifest += @{ src = $f.FullName; rel = ('global/scripts/' + $f.Name) }
 }
@@ -275,6 +284,15 @@ try {
     $stagedPlugin = Get-Content -LiteralPath (Join-Path $stage 'project-template\.opencode\plugins\token-report.js') -Raw -Encoding UTF8
     if ($stagedPlugin -match '"experimental\.text\.complete"|PULL_ATTEMPTS|pending\.set|pending\.has') {
         throw 'verify FAILED: staged token-report.js still has footer machinery'
+    }
+
+    # Whole-tree scan: every TRACKED file in the destination must be clean.
+    # Catches files the manifest never touches (e.g. the provider block).
+    # Untracked worktree files are out of scope -- commit or remove them first.
+    try { $tracked = @(git -C $dest ls-files 2>$null) } catch { $tracked = @() }
+    foreach ($t in $tracked) {
+        $tp = Join-Path $dest ($t -replace '/', '\')
+        if (Test-Path -LiteralPath $tp -PathType Leaf) { Assert-NoSecrets $tp }
     }
 
     # README correction (idempotent guards -- skip silently if wording already new).

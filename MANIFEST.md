@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-11T04:07:48Z
+2026-10-11T04:18:20Z
 
 
 
@@ -69,6 +69,8 @@
 - `~/.config/opencode/scripts/pre-commit.ps1` -> `global/scripts/pre-commit.ps1`
 
 - `~/.config/opencode/scripts/pre-commit.test.js` -> `global/scripts/pre-commit.test.js`
+
+- `~/.config/opencode/scripts/Publish-Workflow.sanitizer.test.ps1` -> `global/scripts/Publish-Workflow.sanitizer.test.ps1`
 
 - `~/.config/opencode/scripts/VaultArchiveInstructions.md` -> `global/scripts/VaultArchiveInstructions.md`
 

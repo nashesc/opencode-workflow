@@ -46,7 +46,14 @@
     "obsidian_delete_note": "deny",
     "obsidian_delete_*": "deny",
     "obsidian_move_note": "deny",
-    "obsidian_move_file": "deny"
+    "obsidian_move_file": "deny",
+    // Surgical vault edits are denied; the memory commands (log-*, end-session,
+    // recap, start-session) work through read_note + write_note only, so
+    // write_note stays allowed. patch_note is listed in log-error.md as an
+    // alternative but never required.
+    "obsidian_patch_note": "deny",
+    "obsidian_update_frontmatter": "deny",
+    "obsidian_manage_tags": "deny"
   },
 
   "compaction": {
@@ -117,6 +124,8 @@
       }
     }
   },
-  "disabled_providers": [],
-  "small_model": "groq/llama-3.1-8b-instant"
+  "disabled_providers": []
+  // No small_model here: it is a live-machine override (a provider outside
+  // this distro's set), not a shared default. Top-level `model:` likewise
+  // intentionally unset.
 }
