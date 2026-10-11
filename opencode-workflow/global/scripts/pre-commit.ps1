@@ -1,11 +1,13 @@
-﻿# pre-commit.ps1 — capture-only git hook for OpenCode memory system
+﻿# pre-commit.ps1 — git hook for OpenCode memory system
 #
 # LEGACY fallback: pre-commit.js is the canonical portable hook.
 # This script stays for machines without node; behavior is equivalent.
 #
 # Detects the project's test/lint command from its manifest, runs it,
 # and on failure writes up to 3 failure summaries to .opencode/.pending-hook-errors
-# for /end-session to capture. NEVER exits non-zero — this hook never blocks a commit.
+# for /end-session to capture. Test failures NEVER block (exit stays 0 for those).
+# A gitleaks finding DOES block the commit (exit 1); gitleaks tool errors stay
+# capture-only. Secret text is never written to logs.
 #
 # Installed by /end-session when user opts in.
 
@@ -35,30 +37,44 @@ $timestamp   = (Get-Date).ToString('yyyy-MM-dd')
 $dash = [char]0x2014
 $noBom = [Text.UTF8Encoding]::new($false)
 
-# -- Gitleaks soft-gate ------------------------------------------------------
+# -- Gitleaks gate -----------------------------------------------------------
 # Runs on every commit regardless of project type. Only when gitleaks is
-# installed; warns once and skips otherwise. Findings are captured like
-# test failures. Never blocks (exit stays 0).
+# installed; warns once and skips otherwise. Exit 10 (leaks) BLOCKS the
+# commit; any other non-zero is a tool error and stays capture-only.
+# One summary line is logged; secret text is never written to the file.
+$blocked = $false
 $leaks = Get-Command gitleaks -ErrorAction SilentlyContinue
 if ($leaks) {
     try {
-        $leakOut = & gitleaks protect --staged --verbose --no-git 2>&1
-        $leakCode = $LASTEXITCODE
+        Push-Location $projectRoot
+        try {
+            $leakOut = & gitleaks git --pre-commit --staged --redact --no-banner --exit-code 10 2>&1
+            $leakCode = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
     } catch {
         $leakCode = 1
         $leakOut = @("Error running gitleaks: $_")
     }
-    if ($leakCode -ne 0) {
+    if ($leakCode -eq 10) {
+        Write-Error 'pre-commit: gitleaks found possible secret(s) in staged changes -- commit blocked'
         $pendingDir = Split-Path -Parent $pendingFile
         if (-not (Test-Path -LiteralPath $pendingDir)) {
             New-Item -ItemType Directory -Path $pendingDir -Force | Out-Null
         }
-        $leakLines = @($leakOut | Where-Object { $_ -match '\S' } | Select-Object -First 3)
-        foreach ($line in $leakLines) {
-            $cleanLine = ($line -replace '\s+', ' ').Trim()
-            $entry = "$timestamp $dash Pre-commit hook: gitleaks found possible secret $dash $cleanLine"
-            [IO.File]::AppendAllText($pendingFile, $entry + "`r`n", $noBom)
+        $entry = "$timestamp $dash Pre-commit hook: gitleaks found possible secret(s) in staged changes $dash commit blocked"
+        [IO.File]::AppendAllText($pendingFile, $entry + "`r`n", $noBom)
+        $blocked = $true
+    } elseif ($leakCode -ne 0) {
+        $pendingDir = Split-Path -Parent $pendingFile
+        if (-not (Test-Path -LiteralPath $pendingDir)) {
+            New-Item -ItemType Directory -Path $pendingDir -Force | Out-Null
         }
+        $first = @($leakOut | Where-Object { $_ -match '\S' } | Select-Object -First 1)
+        $clean = if ($first.Count) { ($first[0] -replace '\s+', ' ').Trim() } else { "gitleaks exited $leakCode" }
+        $entry = "$timestamp $dash Pre-commit hook: gitleaks tool error (commit allowed) $dash $clean"
+        [IO.File]::AppendAllText($pendingFile, $entry + "`r`n", $noBom)
     }
 } else {
     Write-Output 'pre-commit: gitleaks not installed, secret scan skipped (winget install gitleaks to enable)'
@@ -99,8 +115,8 @@ if (Test-Path -LiteralPath (Join-Path $projectRoot 'package.json')) {
     $testArgs  = @('test')
     $testLabel = 'cargo test'
 } else {
-    # No recognised manifest — skip silently
-    exit 0
+    # No recognised manifest — skip tests, but a gitleaks finding still blocks
+    if ($blocked) { exit 1 } else { exit 0 }
 }
 
 # ── Run the test command ───────────────────────────────────────────────────
@@ -114,6 +130,7 @@ try {
 }
 
 if ($exitCode -eq 0) {
+    if ($blocked) { exit 1 }  # gitleaks findings block even when tests pass
     exit 0  # All good — nothing to log
 }
 
@@ -142,5 +159,5 @@ foreach ($line in $failureLines) {
     [IO.File]::AppendAllText($pendingFile, $entry + "`r`n", $noBom)
 }
 
-# Always exit 0 — capture-only, never blocks
-exit 0
+# Test failures stay capture-only; only gitleaks findings block.
+if ($blocked) { exit 1 } else { exit 0 }

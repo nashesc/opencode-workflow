@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-11T02:45:30Z
+2026-10-11T03:53:41Z
 
 
 
@@ -67,6 +67,8 @@
 - `~/.config/opencode/scripts/pre-commit.js` -> `global/scripts/pre-commit.js`
 
 - `~/.config/opencode/scripts/pre-commit.ps1` -> `global/scripts/pre-commit.ps1`
+
+- `~/.config/opencode/scripts/pre-commit.test.js` -> `global/scripts/pre-commit.test.js`
 
 - `~/.config/opencode/scripts/VaultArchiveInstructions.md` -> `global/scripts/VaultArchiveInstructions.md`
 

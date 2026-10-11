@@ -1,11 +1,13 @@
-// pre-commit.js -- capture-only git hook for the OpenCode memory system.
+// pre-commit.js -- git hook for the OpenCode memory system.
 //
 // Portable equivalent of pre-commit.ps1 (which remains as a fallback for
 // machines without node). Detects the project's test/lint command from its
 // manifest, runs it, and on failure appends up to 3 failure summaries to
-// .opencode/.pending-hook-errors for /end-session to capture.
-// Gitleaks soft-gate: runs `gitleaks protect --staged` when installed,
-// warns once and skips otherwise. NEVER exits non-zero.
+// .opencode/.pending-hook-errors for /end-session to capture. Test failures
+// NEVER block the commit (exit stays 0 for those).
+// Gitleaks gate: runs `gitleaks git --pre-commit --staged` when installed,
+// warns once and skips otherwise. A real finding (exit 10) BLOCKS the commit;
+// tool errors stay capture-only. Secret text is never written to logs.
 //
 // Installed by /end-session when the user opts in.
 // Usage (also handy standalone): node pre-commit.js   (cwd anywhere in repo)
@@ -15,6 +17,21 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+
+// Distinct exit code reserved for "gitleaks found leaks" so findings can be
+// told apart from tool errors (gitleaks uses 1 for both leaks and errors).
+const GITLEAKS_FINDINGS_CODE = 10;
+
+function gitleaksArgs() {
+  return ["git", "--pre-commit", "--staged", "--redact", "--no-banner", "--exit-code", String(GITLEAKS_FINDINGS_CODE)];
+}
+
+// "clean" | "findings" | "error"
+function classifyGitleaks(code) {
+  if (code === 0) return "clean";
+  if (code === GITLEAKS_FINDINGS_CODE) return "findings";
+  return "error";
+}
 
 function gitRoot(start) {
   let dir = path.resolve(start);
@@ -59,29 +76,38 @@ function main() {
     fs.appendFileSync(pending, text + "\n", "utf8");
   };
 
-  // Gitleaks soft-gate: runs on every commit regardless of project type.
+  // Gitleaks gate: runs on every commit regardless of project type.
+  // Exit 10 (leaks) blocks the commit; any other non-zero is a tool error
+  // and stays capture-only. One summary line is logged; secret text and
+  // raw tool output are never written to the pending file.
+  let blocked = false;
   if (onPath("gitleaks")) {
     let g;
     try {
-      g = spawnSync("gitleaks", ["protect", "--staged", "--verbose", "--no-git"], { encoding: "utf8", shell: process.platform === "win32" });
+      g = spawnSync("gitleaks", gitleaksArgs(), { encoding: "utf8", shell: process.platform === "win32", cwd: root });
     } catch (e) {
       g = { status: 1, stdout: "", stderr: "Error running gitleaks: " + String((e && e.message) || e) };
     }
     const gCode = !g || g.status === null || g.status === undefined ? 1 : g.status;
-    let gOut = ((g && g.stdout) || "") + "\n" + ((g && g.stderr) || "");
-    if (g && g.error) gOut += "\nError running gitleaks: " + g.error.message;
-    if (gCode !== 0) {
-      const lines = gOut.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 3);
-      for (const l of lines.length ? lines : ["gitleaks reported findings (no detail captured)"]) {
-        append(stamp + " \u2014 Pre-commit hook: gitleaks found possible secret \u2014 " + l);
-      }
+    const verdict = classifyGitleaks(gCode);
+    if (verdict === "findings") {
+      console.error("pre-commit: gitleaks found possible secret(s) in staged changes -- commit blocked");
+      append(stamp + " \u2014 Pre-commit hook: gitleaks found possible secret(s) in staged changes \u2014 commit blocked");
+      blocked = true;
+    } else if (verdict === "error") {
+      const gOut = ((g && g.stdout) || "") + "\n" + ((g && g.stderr) || "");
+      if (g && g.error) gOut += "\nError running gitleaks: " + g.error.message;
+      const first = gOut.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean)[0]
+        || ("gitleaks exited " + gCode);
+      append(stamp + " \u2014 Pre-commit hook: gitleaks tool error (commit allowed) \u2014 " + first);
     }
   } else {
     console.log("pre-commit: gitleaks not installed, secret scan skipped (winget install gitleaks to enable)");
   }
 
   const t = detect(root);
-  if (!t) return 0;
+  // No recognised manifest: skip tests, but a gitleaks finding still blocks.
+  if (!t) return blocked ? 1 : 0;
   let out = "", code = 0;
   try {
     // shell on win32 so .cmd shims (npm, pytest) resolve; exact exec elsewhere.
@@ -93,7 +119,7 @@ function main() {
     code = 1;
     out = "Error running '" + t.label + "': " + String((e && e.message) || e);
   }
-  if (code === 0) return 0;
+  if (code === 0) return blocked ? 1 : 0;
   const lines = out.split(/\r?\n/);
   let fails = lines.filter((l) => /FAIL|FAILED|Error|error|✗|×|●|\bfailed\b/.test(l)).slice(0, 3);
   if (!fails.length) fails = lines.map((l) => l.trim()).filter(Boolean).slice(-3);
@@ -101,11 +127,16 @@ function main() {
   for (const l of fails) {
     append(stamp + " \u2014 Pre-commit hook: " + t.label + " failed \u2014 " + l.replace(/\s+/g, " ").trim());
   }
-  return 0;
+  // Test failures stay capture-only; only gitleaks findings block.
+  return blocked ? 1 : 0;
 }
 
-try {
-  process.exitCode = main() || 0;
-} catch {
-  process.exitCode = 0; // capture-only: never block a commit
+if (require.main === module) {
+  try {
+    process.exitCode = main() || 0;
+  } catch {
+    process.exitCode = 0; // never block on hook-internal errors
+  }
+} else {
+  module.exports = { classifyGitleaks, gitleaksArgs, GITLEAKS_FINDINGS_CODE };
 }

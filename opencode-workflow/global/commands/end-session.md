@@ -115,14 +115,17 @@ just a sample file (samples end in `.sample`).
 
 If no active pre-commit hook exists: ask once:
 ```
-No pre-commit hook found. Install a capture-only hook that records test failures
-for /end-session review? It will never block commits. [y/N]
+No pre-commit hook found. Install the hook that records test failures
+for /end-session review? Test failures never block; only a gitleaks
+finding blocks the commit. [y/N]
 ```
 
 If the user answers y:
 1. Create `.git/hooks/pre-commit` with this content (overwrite if exists).
    Prefers the portable Node hook; falls back to the PowerShell one on
-   machines without node. Windows-only paths — adjust on macOS/Linux:
+   machines without node. Windows-only paths — adjust on macOS/Linux.
+   The trailing `exit $?` propagates the hook result so a gitleaks
+   finding actually blocks the commit:
     ```
     #!/bin/sh
     if command -v node >/dev/null 2>&1; then
@@ -132,7 +135,7 @@ If the user answers y:
     else
       powershell.exe -NonInteractive -NoProfile -File "$USERPROFILE/.config/opencode/scripts/pre-commit.ps1"
     fi
-    exit 0
+    exit $?
     ```
 2. On Windows/Git-for-Windows the sh.exe in Git's path handles this. Confirm:
    "Pre-commit hook installed at .git/hooks/pre-commit"
@@ -141,6 +144,6 @@ If the user answers N or skips: confirm "Hook not installed."
 
 If a hook already exists: skip this offer entirely.
 
-**Secret scanning (optional):** the hook runs `gitleaks protect --staged` when
-`gitleaks` is installed (`winget install gitleaks`), capturing hits for review.
-Without it, the hook prints a one-line skip notice. It never blocks commits.
+**Secret scanning (optional):** the hook runs `gitleaks git --pre-commit --staged --redact --no-banner` when
+`gitleaks` is installed (`winget install gitleaks`), blocking the commit on findings (exit 10) while tool errors stay
+capture-only. Without it, the hook prints a one-line skip notice. Test failures never block commits.
