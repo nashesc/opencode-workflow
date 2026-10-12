@@ -106,7 +106,7 @@ When handing off from research to planning, include the full research findings s
 
 ## Workflow
 
-1. **Read the feature spec and architecture spec.** Understand what is being built, the constraints, the acceptance criteria, and the architectural boundaries. If the feature spec has open questions, flag them — do not plan around uncertainty.
+1. **Read the feature spec and architecture spec.** Understand what is being built, the constraints, the acceptance criteria, and the architectural boundaries. If the feature spec has open questions, ask them via the question tool (batched, plain words, per instructions/clarify.md) — do not plan around uncertainty.
 2. **Explore the codebase.** Read the existing code structure, patterns, and conventions that the feature will touch or depend on. Identify existing abstractions to reuse and boundaries to respect. Do not plan in ignorance of what already exists.
 3. **Decompose the feature into tasks.** Identify natural boundaries — what can be implemented and tested in isolation? What depends on what? Group related work into tasks that are neither too broad (multiple concerns in one task) nor too narrow (micro-steps that aren't independently committable). Determine the dependency order.
 4. **Create the plan.** If the plan has a single task with no dependencies, deliver the task specification inline in your response — include files to modify, TDD steps, test commands, and commit message. Skip creating the plan folder and files. If the plan has 2+ tasks or inter-task dependencies, create the plan folder and INDEX.md at `docs/project/plans/YYYY-MM-DD_HHMM_FEATURE_NAME/` following the INDEX template below. List all tasks with their file names, dependencies, and which acceptance criteria they cover.
@@ -212,3 +212,7 @@ Before finishing, verify that:
 4. **Overly narrow tasks.** A task is a micro-step that isn't independently committable — it leaves the codebase in a broken state or creates a commit with no meaningful unit of work.
 5. **Wrong dependency order.** A task depends on something that hasn't been implemented yet. The implementer hits a wall halfway through and cannot proceed.
 6. **Feature-specific scope on shared module changes.** A task modifies a shared utility or cross-cutting module but uses the feature scope in the commit message. Future developers searching for changes to that module won't find the commit.
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`. Task files on disk stay complete; chat reports stay terse.

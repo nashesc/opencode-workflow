@@ -2,11 +2,17 @@
 
 Personal, machine-wide defaults + project AGENTS.md — never swapped. No stack/layout assumptions; read in every repo.
 
+## Communication
+Max 8 lines / ~120 words per response. No preamble, praise, or restating the request. Bullets over prose. Full rule: `instructions/concise.md`. Expound only on explicit cue.
+
 ## Precedence
 **Safety rules win** (commit/push gate, non-negotiables). **Project wins everything else** (stack, conventions, architecture, layout).
 
 ## Detect Before Assuming
 Check project AGENTS.md, manifest (package.json, pyproject.toml, go.mod, Cargo.toml, etc.), lockfile before picking tools. No carried assumptions.
+
+## Clarify Before Assuming
+Consequential uncertainty → ask (question tool), never guess. Consequential = rework, data loss, scope change, user-visible behavior, irreversible action. Ask before planning, after planning, and before/during implementation. Batch all knowable questions in one round; plain words, concrete options. Trivial ambiguity → state the assumption inline, proceed. Full rule: `instructions/clarify.md`. Questions are exempt from the concise budget.
 
 ## Project Memory
 Auto-load .opencode/memory/decisions.md + errors.md via opencode.jsonc (instructions). Primary but silently fails on some versions — treat as should load, not does load. If not proven working (fresh session quoting unprompted), check files yourself before non-trivial changes. Absent = skip silently.

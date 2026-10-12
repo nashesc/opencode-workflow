@@ -1,7 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["instructions/concise.md"],
+  "instructions": ["instructions/concise.md", "instructions/clarify.md"],
   "permission": {
+    // Question tool stays allowed: clarification-by-default (instructions/clarify.md)
+    // requires asking the user on consequential uncertainty.
+    "question": "allow",
     "bash": {
       "*": "ask",
       "git status*": "allow",

@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-11T04:26:17Z
+2026-10-12T12:40:41Z
 
 
 
@@ -59,6 +59,8 @@
 - `~/.config/opencode/templates/INDEX-FORMAT.md` -> `global/templates/INDEX-FORMAT.md`
 
 - `~/.config/opencode/templates/TASK-FORMAT.md` -> `global/templates/TASK-FORMAT.md`
+
+- `~/.config/opencode/instructions/clarify.md` -> `global/instructions/clarify.md`
 
 - `~/.config/opencode/instructions/concise.md` -> `global/instructions/concise.md`
 
