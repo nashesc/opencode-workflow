@@ -41,5 +41,9 @@ closes that gap; this agent should never need anything outside it.
 `grep`/`ls` specifically might not match on native Windows depending on
 which shell OpenCode selects (verify with `opencode debug config` if
 unsure) — not a real
-limitation here either way, since the native Read/Grep/Glob tools aren't
-gated by this `bash` block and still work regardless.
+ limitation here either way, since the native Read/Grep/Glob tools aren't
+ gated by this `bash` block and still work regardless.
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

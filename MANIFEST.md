@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-12T12:40:41Z
+2026-10-14T06:17:30Z
 
 
 
@@ -56,6 +56,8 @@
 
 - `~/.config/opencode/skills/test-pipeline/SKILL.md` -> `global/skills/test-pipeline/SKILL.md`
 
+- `~/.config/opencode/skills/web-research/SKILL.md` -> `global/skills/web-research/SKILL.md`
+
 - `~/.config/opencode/templates/INDEX-FORMAT.md` -> `global/templates/INDEX-FORMAT.md`
 
 - `~/.config/opencode/templates/TASK-FORMAT.md` -> `global/templates/TASK-FORMAT.md`
@@ -102,4 +104,4 @@
 
 - `<workspace>/tools/token-report/vault-log.test.js` -> `project-template/tools/token-report/vault-log.test.js`
 
-- workspace HEAD: db062a6
+- workspace HEAD: 6b1f0f6

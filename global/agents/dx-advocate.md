@@ -50,3 +50,7 @@ For each DX-affecting aspect of the feature:
 - Estimated impact (direction + magnitude)
 - Mitigation strategies (caching, parallelization, splitting)
 - Whether impact is acceptable or requires task split
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

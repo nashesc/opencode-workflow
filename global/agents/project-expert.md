@@ -45,3 +45,7 @@ Provide concise, evidence-backed answers:
 - Code snippets demonstrating patterns
 - Direct answers to specific questions
 - "Unknown" if the codebase doesn't reveal the answer
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

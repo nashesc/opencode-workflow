@@ -51,3 +51,7 @@ For each data requirement in the feature spec:
 - Query patterns (read/write, expected frequency)
 - Data integrity rules (FK, CHECK, triggers)
 - Backfill strategy for existing data
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

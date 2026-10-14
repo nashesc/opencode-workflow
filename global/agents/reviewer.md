@@ -41,5 +41,9 @@ Windows; `grep`/`ls` specifically might not, depending on which shell
 OpenCode selects (verify with `opencode debug config` if unsure).
 That's not a real limitation for this agent even in the worst case,
 though — the native Read/Grep/Glob tools aren't part of this `bash`
-permission block at all, so inspection still works through them even if
-every `ls`/`grep` bash invocation gets denied.
+ permission block at all, so inspection still works through them even if
+ every `ls`/`grep` bash invocation gets denied.
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

@@ -51,3 +51,7 @@ For each UI area in the feature spec:
 - Design system tokens used (colors, spacing, typography)
 - A11y requirements (ARIA, keyboard, focus)
 - Responsive behavior
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

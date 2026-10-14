@@ -35,7 +35,11 @@ replace this whole file with a project-level
 `.opencode/agents/tester.md` if the tester's actual *behavior*, not just
 its allow-list, needs to differ — a full-file override stops inheriting
 any later fixes made here. (If inherited permissions ever don't behave
-as expected in your installed version, the fallback is to paste the
-relevant allow-list back into this file explicitly — functionally
-identical, just more verbose, and still preferable to a full override
-for a permissions-only fix.)
+ as expected in your installed version, the fallback is to paste the
+ relevant allow-list back into this file explicitly — functionally
+ identical, just more verbose, and still preferable to a full override
+ for a permissions-only fix.)
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.

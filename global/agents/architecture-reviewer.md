@@ -45,3 +45,7 @@ For each reviewed task or plan:
 - Specific boundary crossed (if any)
 - Architecture doc section reference
 - Suggested task split or boundary clarification
+
+## Communication
+
+Max 8 lines / ~120 words. Bullets over prose, no preamble. Full rule: `instructions/concise.md`.
