@@ -3,3 +3,5 @@
 .opencode/.session-manual-logs
 .opencode/.pending-test-errors
 .opencode/.pending-hook-errors
+# Logo outputs (generated per project by /logo, never track)
+design/logo/

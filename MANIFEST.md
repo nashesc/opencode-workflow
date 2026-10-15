@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-14T06:17:30Z
+2026-10-15T02:08:17Z
 
 
 
@@ -19,6 +19,8 @@
 - `~/.config/opencode/commands/log-decision.md` -> `global/commands/log-decision.md`
 
 - `~/.config/opencode/commands/log-error.md` -> `global/commands/log-error.md`
+
+- `~/.config/opencode/commands/logo.md` -> `global/commands/logo.md`
 
 - `~/.config/opencode/commands/plan.md` -> `global/commands/plan.md`
 

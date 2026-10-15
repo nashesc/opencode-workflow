@@ -175,6 +175,8 @@ foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'agents') -Filt
 foreach ($d in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'skills') -Directory) {
     $skill = Join-Path $d.FullName 'SKILL.md'
     if (Test-Path -LiteralPath $skill) {
+        $extra = @(Get-ChildItem -LiteralPath $d.FullName -Force | Where-Object { $_.Name -ne 'SKILL.md' })
+        if ($extra.Count -gt 0) { Write-Host ("skip multi-file skill dir: " + $d.Name); continue }
         $manifest += @{ src = $skill; rel = ('global/skills/' + $d.Name + '/SKILL.md') }
     }
 }

@@ -5,6 +5,9 @@
     // Question tool stays allowed: clarification-by-default (instructions/clarify.md)
     // requires asking the user on consequential uncertainty.
     "question": "allow",
+    "skill": {
+      "logo-design": "ask"
+    },
     "bash": {
       "*": "ask",
       "git status*": "allow",

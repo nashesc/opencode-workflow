@@ -12,7 +12,7 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
                         │           (~/.config/opencode/)              │
                         │  - Machine-wide non-negotiable safety gates   │
                         │  - 9 Specialized Subagents                   │
-                        │  - 10 Slash Commands                         │
+                        │  - 11 Slash Commands                         │
                         │  - Global Obsidian Vault Memory Protocol     │
                         └──────────────────────┬───────────────────────┘
                                                │
@@ -58,7 +58,8 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 │   │   ├── recap.md                   # /recap (surfaces human-readable memory digest)
 │   │   ├── review.md                  # /review (runs read-only code review)
 │   │   ├── security.md                # /security (runs security audit)
-│   │   └── test.md                    # /test (runs test pipeline + error staging)
+│   │   ├── test.md                    # /test (runs test pipeline + error staging)
+│   │   └── logo.md                    # /logo (logo design via logo-design skill)
 │   ├── scripts/                       # PowerShell automation utilities
 │   │   ├── MemoryHelpers.psm1         # Reverse-chronological prepend & project archive
 │   │   ├── Publish-Workflow.ps1       # Distro sync worker (invoked by /publish-workflow)
@@ -114,6 +115,10 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 - **Vault log:** newest-first `OpenCode/TokenUsage.md` (+ 50-entry archive), path overridable via `TOKEN_USAGE_PATH`.
 - **On-demand summary:** `/tokens` (`.opencode/commands/tokens.md` → `tools/token-report/summary.js`) with bounded trends.
 - **Tests:** `node --test "tools/token-report/*.test.js"` (node:test, no framework; the bare directory form fails — pass the glob). File-debug via `TOKEN_REPORT_DEBUG_FILE`.
+
+### 5. Optional: logo-design skill
+- Install separately (pinned `0ecf52e`, github.com/kaankiziltug/logo-design-skill) into `~/.config/opencode/skills/logo-design/` — it is ~14 MB with third-party trademarked SVGs, so the publisher never bundles it (multi-file skill dirs are skipped) and `/logo` ships the workflow only.
+- Gate it with `"skill": { "logo-design": "ask" }` under `permission` in `opencode.jsonc`.
 
 ---
 
