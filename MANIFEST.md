@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-15T02:08:17Z
+2026-10-15T04:16:38Z
 
 
 
@@ -69,6 +69,8 @@
 - `~/.config/opencode/instructions/concise.md` -> `global/instructions/concise.md`
 
 - `~/.config/opencode/scripts/MemoryHelpers.psm1` -> `global/scripts/MemoryHelpers.psm1`
+
+- `~/.config/opencode/scripts/Mirror-Memory.ps1` -> `global/scripts/Mirror-Memory.ps1`
 
 - `~/.config/opencode/scripts/pre-commit.js` -> `global/scripts/pre-commit.js`
 

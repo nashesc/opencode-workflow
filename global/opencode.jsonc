@@ -68,6 +68,9 @@
   },
   "subagent_depth": 2,
   "mcp": {
+    // Token gate (2026-10-15): obsidian OFF by default — mcpvault tool schemas
+    // stay resident every step when enabled. Enable per-task only for memory
+    // work; project .opencode/memory/ covers the session.
     "obsidian": {
       "type": "local",
       "command": [
@@ -76,7 +79,7 @@
         "@bitbonsai/mcpvault@0.16.0",
         "YOUR_OBSIDIAN_VAULT_PATH"
       ],
-      "enabled": true,
+      "enabled": false,
       "timeout": 20000
     },
     "playwright": {

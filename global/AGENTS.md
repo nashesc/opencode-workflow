@@ -20,6 +20,7 @@ Auto-load .opencode/memory/decisions.md + errors.md via opencode.jsonc (instruct
 ## Obsidian Memory
 Vault: <VAULT_PATH> (set in opencode.jsonc mcp.obsidian.command; mcpvault MCP, obsidian_* tools). Per-project .opencode/memory/ = scratch; vault = durable. Structure: `OpenCode/Memory.md` (one-line-per-note index) + `OpenCode/Projects/<name>/project.md` (purpose, stack, verified commands, `Last verified: <date> <commit>`) + `OpenCode/Projects/<name>/wip.md` (objective, status, blockers, exactly one next action).
 - **Start**: read `OpenCode/Memory.md` index + `OpenCode/Context.md` (user prefs, every session) via MCP, then only the needed notes (outline+lines for large; search>full reads).
+- **Read budgets (token gate)**: outline first for any note >100 lines; read ≤40 lines per slice; never full-read `TokenUsage.md`/`TokenUsage_archive.md`/`Decisions_archive.md`/`Errors_archive.md` (use `/tokens` summary or search); never `read` a directory listing of a skill library (use its search script).
 - **End/decision/error**: prepend to vault (after header) via read_note+manual prepend+write_note, format YYYY-MM-DD — summary — why, plus project /log-decision//log-error. Newest-first; auto-archive @50 entries (regex ^\d{4}-\d{2}-\d{2}\s+[—-] → Decisions_archive.md/Errors_archive.md via obsidian_write_note).
 - Never touch .obsidian/. MCP down → project memory only, say so, don't block.
 

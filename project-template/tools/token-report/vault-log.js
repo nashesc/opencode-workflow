@@ -16,7 +16,9 @@ function today() { return new Date().toISOString().slice(0, 10); }
 
 function formatLine(r) {
   const f = r.vaultFields;
-  return `${today()} — session:${r.sessionID} msg:${r.messageID} model:${r.model} total:${r.total} (in:${f.input} out:${f.output} reason:${f.reasoning} cache-read:${f.cacheRead} cache-write:${f.cacheWrite})`;
+  const t = (r.at || new Date().toISOString()).slice(11, 19);
+  const agent = (r.agent || "main").toString().replace(/\s+/g, "_");
+  return `${today()} — ${t} agent:${agent} session:${r.sessionID} msg:${r.messageID} model:${r.model} total:${r.total} (in:${f.input} out:${f.output} reason:${f.reasoning} cache-read:${f.cacheRead} cache-write:${f.cacheWrite})`;
 }
 
 function readEntries(vaultPath) {

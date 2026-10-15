@@ -1,7 +1,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const { totalTokens, formatTotalLine } = require("./tokens");
+const { totalTokens, formatTotalLine, contextTokens, cacheHitRate } = require("./tokens");
 
 const REAL = { input: 800, output: 300, reasoning: 100, cache: { read: 30, write: 4 } }; // total 1234
 
@@ -34,4 +34,16 @@ test("no estimation terms anywhere in product code", () => {
   for (const banned of ["charsPerToken", "text.length", "heuristic", "estimate", "/ 4", "* 0.25", "length *"]) {
     assert.ok(!src.toLowerCase().includes(banned.toLowerCase()), `banned term present: ${banned}`);
   }
+});
+
+test("split-view: context = input + cache.read", () => {
+  assert.equal(contextTokens(REAL), 830);
+  assert.equal(contextTokens({ input: 10, output: 5, reasoning: 0, cache: { read: 0, write: 0 } }), 10);
+  assert.equal(contextTokens(null), null);
+});
+
+test("split-view: hit rate = read / context", () => {
+  assert.ok(Math.abs(cacheHitRate(REAL) - 30 / 830) < 1e-9);
+  assert.equal(cacheHitRate({ input: 10, output: 1, reasoning: 0, cache: { read: 0, write: 0 } }), 0);
+  assert.equal(cacheHitRate(null), null);
 });

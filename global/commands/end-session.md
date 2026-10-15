@@ -77,16 +77,20 @@ Options:
 Wait for the user's response for each candidate before moving to the next.
 
 **On (d):** Write to `.opencode/memory/decisions.md` (prepend after header) and
-mirror to `OpenCode/Decisions.md` in the Obsidian vault, following the exact same
-procedure as `/log-decision` including the vault archive check (count >50 → archive
-oldest entries to `OpenCode/Decisions_archive.md`). Also append the entry to
-`.opencode/.session-manual-logs`.
+mirror to the vault file-direct — no MCP (stays off per token gate). Invoke
+(publisher precedent — script is idempotent, reruns are no-ops, archive check
+runs inside; never blocks the session):
+```powershell
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$env:USERPROFILE\.config\opencode\scripts\Mirror-Memory.ps1" -Entry "<entry>" -Type decisions
+```
+Also append the entry to `.opencode/.session-manual-logs`.
 
 **On (e):** Write to `.opencode/memory/errors.md` (prepend after header, format
-`YYYY-MM-DD — summary — Status: Open — rationale`) and mirror to
-`OpenCode/Errors.md` in the Obsidian vault, following the exact same procedure as
-`/log-error` including the vault archive check. Also append the entry to
-`.opencode/.session-manual-logs`.
+`YYYY-MM-DD — summary — Status: Open — rationale`) and mirror file-direct:
+```powershell
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$env:USERPROFILE\.config\opencode\scripts\Mirror-Memory.ps1" -Entry "<entry>" -Type errors
+```
+Also append the entry to `.opencode/.session-manual-logs`.
 
 **On (s):** Skip, move to the next candidate.
 
@@ -100,13 +104,16 @@ After all candidates are processed (or (q)), print a summary:
 Session review complete: N logged as decisions, M logged as errors, K skipped.
 ```
 
-## Step 4 — Cleanup scratch files
+## Step 4 — Advance the marker (do not delete)
 
-Delete the following files if they exist (use PowerShell `Remove-Item`):
-- `.opencode/.session-start`
-- `.opencode/.session-manual-logs`
-- `.opencode/.pending-test-errors`
-- `.opencode/.pending-hook-errors`
+- Overwrite `.opencode/.session-start` with two lines: current ISO
+  timestamp (line 1) and current `git rev-parse HEAD` (line 2, or
+  `no-commits`). This advances the scope marker so the next run only
+  sees new commits — a second run in a row must say "nothing new".
+- Keep `.opencode/.session-manual-logs` (append-only dedupe across runs).
+- Delete only the consumed pending files if they exist
+  (PowerShell `Remove-Item`): `.opencode/.pending-test-errors`,
+  `.opencode/.pending-hook-errors`.
 
 ## Step 5 — Git hook offer
 

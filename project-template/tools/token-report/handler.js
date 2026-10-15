@@ -28,11 +28,15 @@ function handleMessageUpdated(event, opts = {}) {
       return { ok: false, reason: "missing-tokens", sessionID: info.sessionID, messageID: info.id, line: formatTotalLine(null) };
     }
     const t = info.tokens;
+    const ev = event && event.properties ? event : null;
+    const agent = info.agent || info.agentName || (ev && ev.agent) || "main";
     return {
       ok: true,
       sessionID: info.sessionID, messageID: info.id,
       model: `${info.providerID}/${info.modelID}`,
       total, line: formatTotalLine(total),
+      agent: String(agent),
+      at: new Date().toISOString(),
       vaultFields: { input: t.input, output: t.output, reasoning: t.reasoning, cacheRead: t.cache.read, cacheWrite: t.cache.write },
     };
   } catch (err) {

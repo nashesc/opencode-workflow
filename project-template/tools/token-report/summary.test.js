@@ -34,6 +34,23 @@ test("unparseable lines are skipped, summary still renders", () => {
   assert.ok(!out.includes("not an entry"));
 });
 
+test("old date-only lines still parse (backward compat)", () => {
+  const p = tmp();
+  fs.writeFileSync(p, "# TokenUsage\n\n2026-10-14 — session:ses_old msg:m_old model:openai/gpt-5 total:100 (in:50 out:30 reason:10 cache-read:5 cache-write:5)\n", "utf8");
+  const out = getTokensSummary(p);
+  assert.ok(out.includes("m_old"), "legacy line parsed");
+  assert.ok(out.match(/count:\s*1/i));
+});
 test("unreadable path never throws", () => {
   assert.ok(getTokensSummary("Z:\\\0\\nope.md").startsWith("Token summary unavailable"));
+});
+
+test("split-view footer: context avg + hit rate + generation total", () => {
+  const p = tmp();
+  appendReport(rep(1), p);
+  const out = getTokensSummary(p);
+  assert.ok(out.match(/context avg:/i), "context split present");
+  assert.ok(out.match(/cache-hit avg:/i), "hit rate present");
+  assert.ok(out.match(/generation total:/i), "generation total present");
+  assert.ok(out.match(/grand total:/i) && out.match(/avg/i), "legacy continuity kept");
 });

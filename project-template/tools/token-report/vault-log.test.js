@@ -16,7 +16,7 @@ test("creates header + prepends newest-first", () => {
   const entries = readEntries(p);
   assert.equal(entries.length, 2);
   assert.ok(entries[0].includes("msg_2"), "newest first");
-  assert.ok(entries[0].match(/^\d{4}-\d{2}-\d{2} — session:ses_abc msg:msg_2 model:openai\/gpt-5 total:10 \(in:5 out:5 reason:0 cache-read:0 cache-write:0\)/));
+  assert.ok(entries[0].match(/^\d{4}-\d{2}-\d{2} — \d{2}:\d{2}:\d{2} agent:\S+ session:ses_abc msg:msg_2 model:openai\/gpt-5 total:10 \(in:5 out:5 reason:0 cache-read:0 cache-write:0\)/));
 });
 
 test("auto-archives at 50 entries", () => {

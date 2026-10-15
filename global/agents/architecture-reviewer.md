@@ -3,6 +3,7 @@ name: "architecture-reviewer"
 description: "Validating that task decomposition respects architectural boundaries. Use when you are unsure whether a planned task crosses a boundary that the architecture spec doesn't explicitly address."
 mode: subagent
 temperature: 0.3
+steps: 15
 permission:
   read: allow
   edit: deny

@@ -3,6 +3,7 @@ name: "project-expert"
 description: "Understanding existing codebase patterns, data flows, and conventions. Use when you need to know how a part of the system actually works before planning tasks that touch it."
 mode: subagent
 temperature: 0.3
+steps: 15
 permission:
   read: allow
   edit: deny
