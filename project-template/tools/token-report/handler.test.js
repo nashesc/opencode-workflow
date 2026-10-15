@@ -26,13 +26,25 @@ test("assistant with full tokens → ok + total 1234 + TOTAL-only line", () => {
   assert.deepEqual(r.vaultFields, { input: 800, output: 300, reasoning: 100, cacheRead: 30, cacheWrite: 4 });
 });
 
-test("user message → skip, flagged, never throws", () => {
+test("user message → observed for grouping, never recorded", () => {
   const ev = assistant({ input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } });
   ev.properties.info.role = "user";
+  ev.properties.info.id = "msg_user_1";
   const r = handleMessageUpdated(ev);
   assert.equal(r.ok, false);
-  assert.equal(r.reason, "non-assistant");
-  assert.equal(r.line, "`tokens unavailable`");
+  assert.equal(r.reason, "user-prompt");
+  assert.equal(r.promptID, "msg_user_1");
+  assert.equal(r.sessionID, "ses_abc");
+  assert.ok(!("line" in r), "user prompts carry no display line");
+});
+
+test("assistant result carries cost + empty promptID for plugin stamping", () => {
+  const ev = assistant({ input: 800, output: 300, reasoning: 100, cache: { read: 30, write: 4 } });
+  ev.properties.info.cost = 0.0012;
+  const r = handleMessageUpdated(ev);
+  assert.equal(r.ok, true);
+  assert.equal(r.promptID, null);
+  assert.equal(r.cost, 0.0012);
 });
 
 test("assistant with missing tokens → skip + flag (NEVER estimate)", () => {

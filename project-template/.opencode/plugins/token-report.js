@@ -28,6 +28,7 @@ function loadTracker(root) {
 
 export const TokenReport = async (ctx) => {
   const recorded = new Map(); // messageID -> last recorded total (last-wins, idempotent vault writes)
+  const lastPrompt = new Map(); // sessionID -> latest user messageID (per-prompt grouping)
   const log = async (level, message) => {
     try { await ctx.client.app.log({ body: { service: "token-report", level, message } }); } catch {}
   };
@@ -40,9 +41,29 @@ export const TokenReport = async (ctx) => {
       const { handleMessageUpdated, appendReport, resolveVaultPath } = loadTracker(root);
       const r = handleMessageUpdated(event, { log: (l, m) => log(l, m) });
       if (!r || !r.ok) {
-        debugLine({ hook: eventName, ok: false, reason: r && r.reason });
+        // Observe user prompts for grouping (never written to the vault).
+        // If user-role events never arrive, assistant lines stay
+        // prompt:unknown and /tokens falls back to one row per message —
+        // the footer reports the ungrouped share as the self-check signal.
+        if (r && r.reason === "user-prompt" && r.sessionID && r.promptID) {
+          lastPrompt.set(r.sessionID, r.promptID);
+          if (lastPrompt.size > 1000) {
+            const keys = lastPrompt.keys();
+            for (let i = 0; i < 100; i++) {
+              const k = keys.next();
+              if (k.done) break;
+              lastPrompt.delete(k.value);
+            }
+          }
+          debugLine({ hook: eventName, ok: false, reason: "user-prompt", sessionID: r.sessionID, promptID: r.promptID });
+        } else {
+          debugLine({ hook: eventName, ok: false, reason: r && r.reason });
+        }
         return;
       }
+      // Stamp the triggering prompt (or unknown) before dedupe/write.
+      // Stamp the triggering prompt (or unknown) before dedupe/write.
+      r.promptID = lastPrompt.get(r.sessionID) || "unknown";
       // Last-wins: a newer event with different totals overwrites (streaming
       // interim -> final). Identical redelivery (dual subscription) is skipped
       // so the vault never gets duplicate lines.
@@ -59,7 +80,7 @@ export const TokenReport = async (ctx) => {
         }
       }
       try { appendReport(r, resolveVaultPath()); } catch (e) { await log("warn", `vault write failed: ${e?.message}`); }
-      await log("info", `tokens:${r.total} session=${r.sessionID} msg=${r.messageID}`);
+      await log("info", `tokens:${r.total} session=${r.sessionID} msg=${r.messageID} prompt=${r.promptID}`);
       debugLine({ hook: eventName, ok: true, sessionID: r.sessionID, messageID: r.messageID, total: r.total });
     } catch (e) { await log("warn", `event failed: ${e?.message}`); }
   };

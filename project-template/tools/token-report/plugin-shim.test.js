@@ -135,3 +135,38 @@ test("dedupe survives past 1000 entries (bounded LRU, no map wipe)", async () =>
     assert.equal(lines.length, 1);
   } finally { delete process.env.TOKEN_USAGE_PATH; }
 });
+
+const userEvent = (id) => ({ event: {
+  type: "message.updated",
+  properties: { info: {
+    id, sessionID: "ses_abc", role: "user",
+    modelID: "gpt-5", providerID: "openai",
+    time: { created: 1, completed: 2 },
+  } } } });
+
+test("user prompt stamps subsequent assistant lines; user writes nothing", async () => {
+  const dir = withTempVault();
+  try {
+    const mod = await import(SHIM);
+    const plugin = await mod.TokenReport({ client: { app: { log: async () => {} } }, project: {}, directory: process.cwd() });
+    await plugin.event(userEvent("msg_user_7"));
+    const vaultFile = path.join(dir, "TokenUsage.md");
+    assert.ok(!fs.existsSync(vaultFile) || !fs.readFileSync(vaultFile, "utf8").includes("msg_user_7"), "user prompt never written");
+    await plugin.event(evWithId("msg_a1", 500));
+    await plugin.event(evWithId("msg_a2", 600));
+    const text = fs.readFileSync(path.join(dir, "TokenUsage.md"), "utf8");
+    const lines = text.split("\n").filter((l) => l.includes("prompt:msg_user_7"));
+    assert.equal(lines.length, 2, "both assistant steps stamped");
+  } finally { delete process.env.TOKEN_USAGE_PATH; }
+});
+
+test("assistant without a preceding user prompt lands in prompt:unknown", async () => {
+  const dir = withTempVault();
+  try {
+    const mod = await import(SHIM);
+    const plugin = await mod.TokenReport({ client: { app: { log: async () => {} } }, project: {}, directory: process.cwd() });
+    await plugin.event(evWithId("msg_solo", 500));
+    const text = fs.readFileSync(path.join(dir, "TokenUsage.md"), "utf8");
+    assert.ok(text.split("\n").some((l) => l.includes("msg_solo") && l.includes("prompt:unknown")));
+  } finally { delete process.env.TOKEN_USAGE_PATH; }
+});

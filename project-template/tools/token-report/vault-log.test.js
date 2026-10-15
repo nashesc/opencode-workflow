@@ -16,13 +16,22 @@ test("creates header + prepends newest-first", () => {
   const entries = readEntries(p);
   assert.equal(entries.length, 2);
   assert.ok(entries[0].includes("msg_2"), "newest first");
-  assert.ok(entries[0].match(/^\d{4}-\d{2}-\d{2} — \d{2}:\d{2}:\d{2} agent:\S+ session:ses_abc msg:msg_2 model:openai\/gpt-5 total:10 \(in:5 out:5 reason:0 cache-read:0 cache-write:0\)/));
+  assert.ok(entries[0].match(/^\d{4}-\d{2}-\d{2} — \d{2}:\d{2}:\d{2} agent:\S+ session:ses_abc msg:msg_2 prompt:unknown cost:0 model:openai\/gpt-5 total:10 \(in:5 out:5 reason:0 cache-read:0 cache-write:0\)/));
 });
 
-test("auto-archives at 50 entries", () => {
+test("promptID + cost are stamped into the line when provided", () => {
   const dir = tmp(); const p = path.join(dir, "TokenUsage.md");
-  for (let i = 0; i < 51; i++) appendReport({ ...REPORT, messageID: `m${i}` }, p);
-  assert.equal(readEntries(p).length, 50);
+  appendReport({ ...REPORT, promptID: "msg_user_9", cost: 0.0012 }, p);
+  const entries = readEntries(p);
+  assert.equal(entries.length, 1);
+  assert.ok(entries[0].includes("prompt:msg_user_9"), "prompt stamped");
+  assert.ok(entries[0].includes("cost:0.0012"), "cost stamped");
+});
+
+test("auto-archives at 300 entries", () => {
+  const dir = tmp(); const p = path.join(dir, "TokenUsage.md");
+  for (let i = 0; i < 301; i++) appendReport({ ...REPORT, messageID: `m${i}` }, p);
+  assert.equal(readEntries(p).length, 300);
   const archive = fs.readFileSync(path.join(dir, "TokenUsage_archive.md"), "utf8");
   assert.ok(archive.includes("m0"), "oldest moved to archive");
 });

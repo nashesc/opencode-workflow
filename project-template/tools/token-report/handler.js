@@ -10,6 +10,10 @@ function handleMessageUpdated(event, opts = {}) {
   try {
     const info = event && event.properties && event.properties.info;
     if (!info || typeof info !== "object") return { ok: false, reason: "malformed", line: formatTotalLine(null) };
+    // Observe (never record) user prompts: the plugin tracks the latest
+    // user messageID per session and stamps subsequent assistant lines with
+    // it, so /tokens can group steps per prompt. No vault write here.
+    if (info.role === "user") return { ok: false, reason: "user-prompt", sessionID: info.sessionID, promptID: info.id };
     if (info.role !== "assistant") return { ok: false, reason: "non-assistant", line: formatTotalLine(null) };
     // Gate rule: record ONLY finished events (time.completed present).
     // Streaming interim snapshots — even with non-zero totals — are skipped
@@ -30,12 +34,15 @@ function handleMessageUpdated(event, opts = {}) {
     const t = info.tokens;
     const ev = event && event.properties ? event : null;
     const agent = info.agent || info.agentName || (ev && ev.agent) || "main";
+    const cost = typeof info.cost === "number" && Number.isFinite(info.cost) ? info.cost : null;
     return {
       ok: true,
       sessionID: info.sessionID, messageID: info.id,
       model: `${info.providerID}/${info.modelID}`,
       total, line: formatTotalLine(total),
       agent: String(agent),
+      promptID: null, // stamped by the plugin from per-session last user prompt
+      cost,
       at: new Date().toISOString(),
       vaultFields: { input: t.input, output: t.output, reasoning: t.reasoning, cacheRead: t.cache.read, cacheWrite: t.cache.write },
     };

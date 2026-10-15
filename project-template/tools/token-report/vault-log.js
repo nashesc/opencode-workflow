@@ -4,9 +4,9 @@ const os = require("node:os");
 const path = require("node:path");
 
 const DEFAULT_VAULT_FILE = null;
-const HEADER = "# TokenUsage\n\nEntries are prepended at the top (newest first), auto-archived after 50 entries.\n\n";
+const HEADER = "# TokenUsage\n\nEntries are prepended at the top (newest first), auto-archived after 300 entries (~50 prompts at ~6 steps each; /tokens groups rows per prompt).\n\n";
 const ENTRY_RE = /^\d{4}-\d{2}-\d{2}\s+[—-]/;
-const MAX_ENTRIES = 50;
+const MAX_ENTRIES = 300;
 
 function resolveVaultPath(explicit) {
   return explicit || process.env.TOKEN_USAGE_PATH || path.join(os.homedir(), "Documents", "Obsidian Vault", "OpenCode", "TokenUsage.md");
@@ -18,7 +18,9 @@ function formatLine(r) {
   const f = r.vaultFields;
   const t = (r.at || new Date().toISOString()).slice(11, 19);
   const agent = (r.agent || "main").toString().replace(/\s+/g, "_");
-  return `${today()} — ${t} agent:${agent} session:${r.sessionID} msg:${r.messageID} model:${r.model} total:${r.total} (in:${f.input} out:${f.output} reason:${f.reasoning} cache-read:${f.cacheRead} cache-write:${f.cacheWrite})`;
+  const prompt = (r.promptID || "unknown").toString().replace(/\s+/g, "_");
+  const cost = Number.isFinite(r.cost) ? r.cost : 0;
+  return `${today()} — ${t} agent:${agent} session:${r.sessionID} msg:${r.messageID} prompt:${prompt} cost:${cost} model:${r.model} total:${r.total} (in:${f.input} out:${f.output} reason:${f.reasoning} cache-read:${f.cacheRead} cache-write:${f.cacheWrite})`;
 }
 
 function readEntries(vaultPath) {

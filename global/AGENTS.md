@@ -14,6 +14,12 @@ Check project AGENTS.md, manifest (package.json, pyproject.toml, go.mod, Cargo.t
 ## Clarify Before Assuming
 Consequential uncertainty → ask (question tool), never guess. Consequential = rework, data loss, scope change, user-visible behavior, irreversible action. Ask before planning, after planning, and before/during implementation. Batch all knowable questions in one round; plain words, concrete options. Trivial ambiguity → state the assumption inline, proceed. Full rule: `instructions/clarify.md`. Questions are exempt from the concise budget.
 
+## Context Budget
+- Lazy reads only: files named in the prompt or proven needed; never re-read images/assets/memory unprompted. An explicit "don't re-read X" persists for the session.
+- Slice budget: ≤40 lines per read; grep/search over full reads; `diff --stat` before full diff; scoped tests over full suites; footer-only (`tail`) for token summaries.
+- Images: SVG/text first; PNG/slide reads only on explicit visual asks; never directory-list render folders.
+- Long sessions: suggest `/compact` past ~100k context; Task subagents get short return contracts (verdict + files + diffs, not transcripts).
+
 ## Project Memory
 Auto-load .opencode/memory/decisions.md + errors.md via opencode.jsonc (instructions). Primary but silently fails on some versions — treat as should load, not does load. If not proven working (fresh session quoting unprompted), check files yourself before non-trivial changes. Absent = skip silently.
 
