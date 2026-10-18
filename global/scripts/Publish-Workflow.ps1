@@ -259,7 +259,18 @@ try {
         $raw = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8
         $clean = $raw
         foreach ($p in $KEY_PATTERNS) { $clean = $clean -creplace $p, '<REDACTED>' }
+        $destFwd = $DEFAULT_DEST -replace '\\', '/'
         $clean = $clean -replace [regex]::Escape($DEFAULT_DEST), '<WORKFLOW_DISTRO>'
+        $clean = $clean -replace [regex]::Escape($destFwd), '<WORKFLOW_DISTRO>'
+        # Generic home-path redaction (2026-10-18). A project config can hardcode
+        # absolute global paths (instructions entries for concise/clarify/profile.md)
+        # that never contain $DEFAULT_DEST -- those are machine-specific too and
+        # leaked C:\Users\<name> into the published copy. Runs after the more
+        # specific $DEFAULT_DEST rule so the distro placeholder wins. Both
+        # separator styles are needed: config files often use forward slashes.
+        $homeFwd = $HOME -replace '\\', '/'
+        $clean = $clean -replace [regex]::Escape($HOME), '<HOME>'
+        $clean = $clean -replace [regex]::Escape($homeFwd), '<HOME>'
         if ($f.Extension -match '^\.ps(m)?1$') { Write-StagedScript $f.FullName $clean }
         else { Write-StagedFile $f.FullName $clean }
     }

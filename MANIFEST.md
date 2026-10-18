@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-15T07:47:24Z
+2026-10-18T08:56:34Z
 
 
 
@@ -52,6 +52,12 @@
 
 - `~/.config/opencode/agents/ux-architect.md` -> `global/agents/ux-architect.md`
 
+- `~/.config/opencode/skills/build-verify/SKILL.md` -> `global/skills/build-verify/SKILL.md`
+
+- `~/.config/opencode/skills/debugging/SKILL.md` -> `global/skills/debugging/SKILL.md`
+
+- `~/.config/opencode/skills/frontend-verify/SKILL.md` -> `global/skills/frontend-verify/SKILL.md`
+
 - `~/.config/opencode/skills/review-checklist/SKILL.md` -> `global/skills/review-checklist/SKILL.md`
 
 - `~/.config/opencode/skills/security-checklist/SKILL.md` -> `global/skills/security-checklist/SKILL.md`
@@ -68,6 +74,10 @@
 
 - `~/.config/opencode/instructions/concise.md` -> `global/instructions/concise.md`
 
+- `~/.config/opencode/scripts/memory.js` -> `global/scripts/memory.js`
+
+- `~/.config/opencode/scripts/memory.test.js` -> `global/scripts/memory.test.js`
+
 - `~/.config/opencode/scripts/MemoryHelpers.psm1` -> `global/scripts/MemoryHelpers.psm1`
 
 - `~/.config/opencode/scripts/Mirror-Memory.ps1` -> `global/scripts/Mirror-Memory.ps1`
@@ -79,6 +89,8 @@
 - `~/.config/opencode/scripts/pre-commit.test.js` -> `global/scripts/pre-commit.test.js`
 
 - `~/.config/opencode/scripts/Publish-Workflow.sanitizer.test.ps1` -> `global/scripts/Publish-Workflow.sanitizer.test.ps1`
+
+- `~/.config/opencode/scripts/skills.test.js` -> `global/scripts/skills.test.js`
 
 - `~/.config/opencode/scripts/VaultArchiveInstructions.md` -> `global/scripts/VaultArchiveInstructions.md`
 

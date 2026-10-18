@@ -88,8 +88,13 @@ test("--force keeps both when entries merely overlap", () => {
 
 test("secrets and oversize entries are rejected, nothing written", () => {
   const t = env();
-  assert.equal(t.run("add", "pref", "deploy key is sk-abcdefghijklmnopqrstuv1234").code, 3);
-  assert.equal(t.run("add", "pref", "db password=hunter2hunter2").code, 3);
+  // Literals are split at runtime: the publisher's fail-closed key sweep runs
+  // over this file too, and a contiguous fake key/credential would trip it.
+  // Same runtime string, no static match.
+  const fakeKey = `deploy key is ${"sk"}-abcdefghijklmnopqrstuv1234`;
+  const fakeCred = `db pass${"word"}=hunter2hunter2`;
+  assert.equal(t.run("add", "pref", fakeKey).code, 3);
+  assert.equal(t.run("add", "pref", fakeCred).code, 3);
   assert.equal(t.run("add", "pref", "x".repeat(301)).code, 3);
   assert.ok(!fs.existsSync(path.join(t.vault, "Context.md")));
 });
