@@ -24,3 +24,11 @@ id_rsa*
 .opencode/.session-manual-logs
 .opencode/.pending-test-errors
 .opencode/.pending-hook-errors
+
+# Superseded layout fossils (pre-flatten; live distro lives at repo root)
+opencode-harness-v2/
+opencode-harness-v2-2/
+opencode-harness-v2-folder/
+opencode-template/
+opencode-global-workflow/
+harness-redesign-notes/
