@@ -162,6 +162,20 @@ test("recall: ranks relevant entries, honors limit, skips archives unless asked"
   assert.match(t.run("recall", "kubernetes helm", "--archive").out, /kubernetes/);
 });
 
+test("recall: entry mirrored in both the local and vault decisions file yields one line, local wins", () => {
+  const t = env();
+  const r = t.run("add", "decision", "Pin the release tag before publishing the harness", "--project", "alpha");
+  assert.equal(r.code, 0, r.err);
+  const id = r.out.match(/ADDED ([0-9a-f]{6})/)[1];
+  const entry = t.read("Decisions.md").trim().split("\n").at(-1);
+  fs.mkdirSync(path.join(t.cwd, ".opencode", "memory"), { recursive: true });
+  fs.writeFileSync(path.join(t.cwd, ".opencode", "memory", "decisions.md"), `# decisions\n\nEntries are prepended at the top (newest first), auto-archived after 50 entries.\n\n${entry}\n`);
+  const hits = t.run("recall", "pin release tag harness", "--limit", "15");
+  const lines = hits.out.split("\n").filter((l) => l.includes("Pin the release tag"));
+  assert.equal(lines.length, 1, hits.out);
+  assert.ok(lines[0].startsWith(`[${id}] .opencode/memory/`), lines[0]);
+});
+
 test("sync: index block links hubs, is idempotent, preserves other Memory.md content", () => {
   const t = env();
   fs.mkdirSync(path.join(t.vault, "Projects", "alpha"), { recursive: true });

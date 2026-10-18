@@ -273,12 +273,27 @@ function recall(q, a) {
       if (!m || (m < 2 && m / qt.size < 0.34)) return;
       let score = m / qt.size;
       if (s.proj === proj || line.includes(`#proj/${slug(proj)}`) || s.local) score += 0.2;
-      hits.push({ score, date: e ? e.date : "", id: e ? e.id : "-", where: `${s.local ? ".opencode/memory/" : ""}${path.relative(VAULT, s.f).startsWith("..") ? path.basename(s.f) : path.relative(VAULT, s.f)}:${i + 1}`, txt });
+      hits.push({ score, date: e ? e.date : "", id: e ? e.id : "-", local: !!s.local, where: `${s.local ? ".opencode/memory/" : ""}${path.relative(VAULT, s.f).startsWith("..") ? path.basename(s.f) : path.relative(VAULT, s.f)}:${i + 1}`, txt });
     });
   }
   hits.sort((x, y) => y.score - x.score || y.date.localeCompare(x.date));
   if (!hits.length) return out(0, "no matches");
-  return out(0, hits.slice(0, limit).map((h) => `[${h.id}] ${h.where} ${h.txt.slice(0, 180)}`).join("\n"));
+  const byId = new Map();
+  for (const h of hits) {
+    if (h.id === "-") continue;
+    const cur = byId.get(h.id);
+    if (!cur || (h.local && !cur.local)) byId.set(h.id, h);
+  }
+  const uniq = [];
+  const taken = new Set();
+  for (const h of hits) {
+    if (h.id !== "-") {
+      if (taken.has(h.id) || byId.get(h.id) !== h) continue;
+      taken.add(h.id);
+    }
+    uniq.push(h);
+  }
+  return out(0, uniq.slice(0, limit).map((h) => `[${h.id}] ${h.where} ${h.txt.slice(0, 180)}`).join("\n"));
 }
 function brief(a) {
   const lines = [];

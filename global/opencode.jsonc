@@ -19,16 +19,13 @@
       "npm test*": "allow",
       "bun test*": "allow",
 
-      // memory.js: retrieval/sync are read-or-derive only. `add` stays "ask":
-      // it persists text that loads into EVERY future session, so a prompt
-      // injected via repo content must not be able to write it silently.
-      // Last matching rule wins, so the add* line must stay below the allow.
-      // Pattern is `*memory.js*`, not `node *memory.js *`: verified 2026-10-18
-      // that the latter misses quoted/backslash paths
-      // (`node "C:\Users\...memory.js" lint`) and falls through to `*`: ask,
-      // so every read prompted on Windows. Forward-slash `~/` paths matched.
-      "*memory.js*": "allow",
-      "*memory.js add*": "ask",
+      // memory.js: retrieval/sync are read-or-derive only. `add` stays "ask".
+      // Prefix `node ` and keep the wildcard tight against the filename:
+      // covers quoted + backslash Windows paths (`node "C:\...\memory.js"`)
+      // and the unquoted form, while leaving `cat`/`type` on the script to
+      // fall through to `*`: ask. `add` is listed BELOW allow so it wins.
+      "node *memory.js*": "allow",
+      "node *memory.js* add*": "ask",
 
       "git commit*": "ask",
       "git push*": "ask",
