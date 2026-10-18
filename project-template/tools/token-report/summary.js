@@ -183,7 +183,7 @@ function getTokensSummary(vaultPath, opts = {}) {
       `${pad(g.lastAt, 19)} ${pad(g.prompt, 30)} steps:${padL(g.steps, 2)} total:${padL(fmt(g.total), 11)} cache-read/step:${padL(fmt(g.cacheRead / g.steps), 9)} fresh-in/step:${padL(fmt(g.input / g.steps), 9)}${possibleDoubleCount(g) ? " !dbl" : ""}${g.partial ? " ~partial" : ""}`);
     if (rows.length < wanted) rowLines.push(`+${wanted - rows.length} more rows (oldest of ${groups.length} requests)`);
     const hidden = hiddenSessions();
-    if (hidden > 0) rowLines.push(`+${hidden} sessions not shown`);
+    if (hidden > 0) rowLines.push(`+${hidden} session${hidden === 1 ? "" : "s"} not shown`);
     // Header range spans the whole window, so every rollup range sits inside it.
     let lo = windowGroups[0];
     let hi = windowGroups[0];
@@ -195,10 +195,15 @@ function getTokensSummary(vaultPath, opts = {}) {
     // The scope line promises a window; a scan that stopped short of the file
     // must say so, with the count it got against the count it was asked for.
     const cutByScan = totalParsed > scan;
-    const shortWindow = windowGroups.length < maxPrompts;
-    const truncated = (kind === "days" || shortWindow) && cutByScan
-      ? ` | window truncated at scan limit: ${windowGroups.length} of ${maxPrompts} requested`
-      : "";
+    // A days window has no request count to be short of — only the scan can
+    // stop it — so it reports what was read. A request window is short only
+    // when it got fewer requests than asked for.
+    const truncated = !cutByScan ? ""
+      : kind === "days"
+        ? ` | window truncated at scan limit (${windowGroups.length} requests read)`
+        : windowGroups.length < maxPrompts
+          ? ` | window truncated at scan limit: ${windowGroups.length} of ${maxPrompts} requested`
+          : "";
     const scannedNote = scan > limit
       ? `scanned ${entries.length}${cutByScan ? "+" : ""} entries (raised from limit ${limit} to ${scan})`
       : `scanned ${entries.length}${cutByScan ? "+" : ""} entries (limit ${limit})`;

@@ -252,12 +252,40 @@ test("a window the scan cannot fill says how many of the requested it got", () =
   assert.match(cut, /scanned 300\+ entries \(raised from limit 50 to 300\)/);
   assert.match(cut, /~partial/, "the cut request is still marked");
   const days = getTokensSummary(p, { kind: "days", days: 7, maxPrompts: 10, limit: 300 });
-  assert.match(days, /window truncated at scan limit: 3 of 10 requested/, "same wording in days mode");
+  assert.match(days, /window truncated at scan limit \(3 requests read\)/, "days mode reports only what it read");
+  assert.ok(!days.includes("of 10 requested"), "days mode never compares against a request count");
   const q = tmp();
   fs.writeFileSync(q, multiStepVault(8, 10), "utf8");
   const whole = getTokensSummary(q, { maxPrompts: 10, limit: 300 });
   assert.ok(!whole.includes("truncated at scan limit"), "no marker when the whole file was read");
   assert.equal(whole.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).length, 8);
+});
+
+test("days mode reports the scan cut as a read count, last mode as a shortfall", () => {
+  const p = tmp();
+  // 800 entries but only 8 requests: even the ceiling scan cannot reach the
+  // file's end, so the window is cut in both modes — only the wording differs.
+  fs.writeFileSync(p, multiStepVault(8, 100, { date: dayOffset(0) }), "utf8");
+  const days = getTokensSummary(p, { kind: "days", days: 7, maxPrompts: 10, limit: 300 });
+  assert.match(days, /window truncated at scan limit \((\d+) requests read\)/, "days mode names what it read");
+  const read = +days.match(/window truncated at scan limit \((\d+) requests read\)/)[1];
+  assert.ok(read > 0, `a count is present, got ${read}`);
+  assert.ok(!/\d+ of \d+ requested/.test(days), "days mode never compares against maxPrompts");
+  const last = getTokensSummary(p, { maxPrompts: 10, limit: 300 });
+  assert.ok(!last.includes("truncated at scan limit ("), "the paren form is days-only");
+  assert.match(last, /window truncated at scan limit: \d+ of 10 requested/, "last mode keeps the requested form");
+});
+
+test("a single hidden rollup is named in the singular", () => {
+  const p = tmp();
+  // 12 requests; the 11 newest span three sessions, and the oldest is the only
+  // request of its session, so the budget drops exactly one rollup.
+  const rows = [line("2026-10-18", "old", { session: "ses_old", prompt: "p0", time: "10:00:00" })];
+  for (let i = 0; i < 11; i++) rows.push(line("2026-10-18", `n${i}`, { session: `ses_${i % 3}`, prompt: `p${i + 1}`, time: `10:${String(i + 1).padStart(2, "0")}:00` }));
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
+  const out = getTokensSummary(p, { maxPrompts: 12 });
+  assert.match(out, /\+1 session not shown\b/, "one hidden session is singular");
+  assert.ok(!out.includes("+1 sessions"), "no plural for a single session");
 });
 
 test("header session count is the window's, and cap-dropped rollups are disclosed", () => {
