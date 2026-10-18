@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["instructions/concise.md", "instructions/clarify.md"],
+  "instructions": ["instructions/concise.md", "instructions/clarify.md", "~/.config/opencode/memory/profile.md"],
   "permission": {
     // Question tool stays allowed: clarification-by-default (instructions/clarify.md)
     // requires asking the user on consequential uncertainty.
@@ -18,6 +18,17 @@
       "npx *": "ask",
       "npm test*": "allow",
       "bun test*": "allow",
+
+      // memory.js: retrieval/sync are read-or-derive only. `add` stays "ask":
+      // it persists text that loads into EVERY future session, so a prompt
+      // injected via repo content must not be able to write it silently.
+      // Last matching rule wins, so the add* line must stay below the allow.
+      // Pattern is `*memory.js*`, not `node *memory.js *`: verified 2026-10-18
+      // that the latter misses quoted/backslash paths
+      // (`node "C:\Users\...memory.js" lint`) and falls through to `*`: ask,
+      // so every read prompted on Windows. Forward-slash `~/` paths matched.
+      "*memory.js*": "allow",
+      "*memory.js add*": "ask",
 
       "git commit*": "ask",
       "git push*": "ask",
@@ -69,8 +80,8 @@
   "subagent_depth": 2,
   "mcp": {
     // Token gate (2026-10-15): obsidian OFF by default — mcpvault tool schemas
-    // stay resident every step when enabled. Enable per-task only for memory
-    // work; project .opencode/memory/ covers the session.
+    // stay resident every step when enabled. Memory read/write goes through
+    // scripts/memory.js (file-direct); enable this only to hand-edit notes.
     "obsidian": {
       "type": "local",
       "command": [

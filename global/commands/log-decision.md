@@ -22,27 +22,14 @@ Import-Module "$env:USERPROFILE\.config\opencode\scripts\MemoryHelpers.psm1" -Fo
 Invoke-MemoryArchive ".opencode\memory\decisions.md" -Threshold 50
 ```
 
-Then mirror the same entry to durable global memory: prepend it to
-`OpenCode/Decisions.md` in the Obsidian vault via the `obsidian` MCP
-(`read_note` to get current content, manually prepend the new entry after
-header, then `write_note` with mode overwrite). If the `obsidian` MCP is
-disconnected, skip the vault mirror silently and say so.
-
-After the vault write, count entries in the vault file: count lines in the
-content matching the pattern `^\d{4}-\d{2}-\d{2}\s+[—-]`. If count > 50:
-1. Read `OpenCode/Decisions.md` via `obsidian_read_note`
-2. Keep the newest 50 entries (top 50 after the header section)
-3. The rest (oldest) go to `OpenCode/Decisions_archive.md`:
-   - If the archive exists (`obsidian_read_note` succeeds): append the oldest
-     entries to the existing content, then `obsidian_write_note` with mode overwrite
-   - If it doesn't exist: create it with header:
-     `# Decisions Archive\n\nArchived entries (oldest first, append-only). This file is never auto-loaded.`
-     followed by the archived entries, then `obsidian_write_note` with mode overwrite
-4. Rewrite `OpenCode/Decisions.md` with just the header + newest 50 entries via
-   `obsidian_write_note` with mode overwrite
-5. Report: "Archived N entries from Decisions.md to Decisions_archive.md"
-
-If any MCP step fails, log a warning and continue — never block the primary write.
+Then mirror to durable global memory (file-direct, no MCP; dedupes, tags the
+project, archives past 50):
+```powershell
+node "$env:USERPROFILE\.config\opencode\scripts\memory.js" add decision "<summary>" --why "<why>"
+```
+Output `DUP` = already stored, fine. `SIMILAR <id>` = overlaps an older entry:
+if this decision replaces it, rerun with `--supersede <id>`; if both stay valid,
+`--force`; otherwise ask. Vault unreachable → say so, never block the project write.
 
 Finally, append the entry text (the one-line `YYYY-MM-DD — summary — why` string)
 to `.opencode/.session-manual-logs` in the current project directory (create the

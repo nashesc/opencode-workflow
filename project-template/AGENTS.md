@@ -15,7 +15,7 @@ Project-specific facts and rules. Combined with global `AGENTS.md` at `~/.config
 <!-- Add rules beyond global only. Delete this section if none. -->
 
 ## Memory
-`.opencode/memory/decisions.md` and `.opencode/memory/errors.md` auto-loaded via `opencode.jsonc` (`instructions`). Format: `date — one-line summary — why` per entry. Tracked in git — don't gitignore `.opencode/memory/`. Archive stale entries to `decisions_archive.md`/`errors_archive.md` when padding context.
+`.opencode/memory/decisions.md`, `errors.md`, `context.md` auto-loaded via `opencode.jsonc` (`instructions`). Decisions/errors: `date — summary — why`; context: `## Preferences` / `## Constraints` bullets (recurring requirements = constraints). Write via `memory.js add` (global AGENTS.md → Memory), which dedupes and supersedes. Tracked in git — don't gitignore `.opencode/memory/`. Archives (`*_archive.md`) never auto-load.
 
 ## Enforcing "done"
 `/review`, `/security`, `/test` are callable, not gates. Real enforcement: git pre-commit hook running lint/test, composing with commit approval. Add hook if "done" needs stronger meaning than "agent said so."

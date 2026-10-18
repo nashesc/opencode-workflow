@@ -7,12 +7,12 @@ This template sets up project-level intelligence and memory for OpenCode in any 
 ## What's Included
 
 - `AGENTS.md` — Project-level agent router defining project identity, tech stack, architectural conventions, and project-specific non-negotiables.
-- `opencode.jsonc` — Project configuration wired to automatically load `.opencode/memory/decisions.md` and `.opencode/memory/errors.md` into every session (explicit list — archives never auto-load).
+- `opencode.jsonc` — Project configuration wired to automatically load `.opencode/memory/decisions.md`, `errors.md`, and `context.md` into every session (explicit list — archives never auto-load).
 - `.opencode/commands/tokens.md` — `/tokens` on-demand token usage summary (bounded trends via `tools/token-report/summary.js`).
 - `.opencode/plugins/token-report.js` — Vault-log-only per-message token totals (no footer injection, no polling).
 - `tools/token-report/` — `node --test "tools/token-report/*.test.js"` suite for the token-report helpers (no framework).
 - `.gitignore` — Ignores transient session scratch files (`.opencode/.session-*`, `.opencode/.pending-*`) and generated logo outputs (`design/logo/`) while preserving durable memory files.
-- `.opencode/memory/` — Dual scratchpad files for `decisions.md` and `errors.md` using reverse-chronological order and automatic 50-entry threshold archiving.
+- `.opencode/memory/` — `decisions.md` / `errors.md` (reverse-chronological, 50-entry archiving) plus `context.md` (project preferences and constraints, written by `memory.js add`).
 
 ---
 

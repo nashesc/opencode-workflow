@@ -24,6 +24,6 @@ candidate generation accurately.
    Run /end-session at the end of the session to review and log decisions/errors.
    ```
 
-5. If the `obsidian` MCP is connected, read the `OpenCode/Memory.md` index via MCP outline, then read only the needed notes for this project. Never do a full-vault read.
+5. Run `node "$env:USERPROFILE\.config\opencode\scripts\memory.js" brief` once (profile + wip fallback; no MCP). If the project has no hub yet, offer `memory.js init`.
 
 $ARGUMENTS

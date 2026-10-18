@@ -1,14 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  // Auto-loads project memory into every session — mechanical, not
+  // Auto-loads project memory (decisions, errors, context) into every session — mechanical, not
   // dependent on the agent remembering to check. Resolves to nothing if
-  // .opencode/memory/ doesn't exist yet (the first /log-decision or
-  // /log-error run creates it, no manual setup needed). Note: this array
-  // does NOT merge with a global `instructions` array if you ever add
-  // one there — OpenCode deep-merges config objects but REPLACES arrays,
-  // so if that ever applies, list everything needed here, not just the
-  // project-specific part.
+  // .opencode/memory/ doesn't exist yet (the first /log-decision, /log-error
+  // or memory.js add run creates it, no manual setup needed).
+  // Global config now ALSO has an instructions array (concise, clarify,
+  // profile.md). Reports conflict on whether OpenCode concatenates or
+  // replaces it across layers, so verify per machine: run
+  // `opencode debug config` in a project and confirm the merged
+  // `instructions` lists all of them; if only this project's entries
+  // appear, replace-semantics apply and the global three must be repeated here.
   //
   // Don't treat this as guaranteed to work — `instructions`-array
   // loading has a real history of silently not reaching the model on
@@ -20,7 +22,7 @@
   // Explicit file list (not a *.md glob): archive files
   // (.opencode/memory/*_archive.md) must never auto-load. A glob would
   // match them and grow context after every archive.
-  "instructions": [".opencode/memory/decisions.md", ".opencode/memory/errors.md"]
+  "instructions": [".opencode/memory/decisions.md", ".opencode/memory/errors.md", ".opencode/memory/context.md"]
 
   // Project-specific permission overrides go here — ONLY where this
   // project's stack genuinely differs from the global default. Permission

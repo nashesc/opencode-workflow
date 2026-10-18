@@ -12,10 +12,8 @@ config), this command's job is to surface it as an explicit, readable
 digest, not just have it sitting unread in the background. If they don't
 exist, skip that part silently — don't treat their absence as an error.
 
-Then, if the `obsidian` MCP is connected, also digest durable global
-memory: read the `OpenCode/Memory.md` index first, then only the needed notes
-plus `OpenCode/Projects/<name>/project.md` / `wip.md` (prefer `search_notes` /
-`get_note_outline` + `read_note_lines` over full reads). If the MCP is
-disconnected, skip the vault part silently and say so.
+Then run `node "$env:USERPROFILE\.config\opencode\scripts\memory.js" brief` (user profile +
+this project's wip next action; no MCP). For a specific area, follow with
+`memory.js recall "<keywords>"` instead of reading vault files.
 
 List open todos and next steps. $ARGUMENTS

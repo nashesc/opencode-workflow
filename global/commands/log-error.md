@@ -27,27 +27,16 @@ Import-Module "$env:USERPROFILE\.config\opencode\scripts\MemoryHelpers.psm1" -Fo
 Invoke-MemoryArchive ".opencode\memory\errors.md" -Threshold 50
 ```
 
-Then mirror the same entry (or Status update) to durable global memory:
-`OpenCode/Errors.md` in the Obsidian vault via the `obsidian` MCP (`read_note`
-to get current content, manually prepend new entry or patch Status field in
-place, then `write_note` overwrite or `patch_note`). If the `obsidian` MCP is
-disconnected, skip the vault mirror silently and say so.
-
-After the vault write, count entries in the vault file: count lines matching
-the pattern `^\d{4}-\d{2}-\d{2}\s+[—-]`. If count > 50:
-1. Read `OpenCode/Errors.md` via `obsidian_read_note`
-2. Keep the newest 50 entries (top 50 after the header section)
-3. The rest (oldest) go to `OpenCode/Errors_archive.md`:
-   - If the archive exists (`obsidian_read_note` succeeds): append the oldest
-     entries to the existing content, then `obsidian_write_note` with mode overwrite
-   - If it doesn't exist: create it with header:
-     `# Errors Archive\n\nArchived entries (oldest first, append-only). This file is never auto-loaded.`
-     followed by the archived entries, then `obsidian_write_note` with mode overwrite
-4. Rewrite `OpenCode/Errors.md` with just the header + newest 50 entries via
-   `obsidian_write_note` with mode overwrite
-5. Report: "Archived N entries from Errors.md to Errors_archive.md"
-
-If any MCP step fails, log a warning and continue — never block the primary write.
+Then mirror a NEW error to durable global memory (file-direct, no MCP; dedupes,
+tags the project, archives past 50). Status updates edit the project file only;
+the vault copy is refreshed with `--supersede <id>` when the status matters
+cross-project:
+```powershell
+node "$env:USERPROFILE\.config\opencode\scripts\memory.js" add error "<summary>" --why "<why>"
+```
+`DUP` = already stored. `SIMILAR <id>` = same failure seen before: `--supersede <id>`
+to replace it with the newer detail, `--force` if distinct. Vault unreachable →
+say so, never block the project write.
 
 For new entries only (not Status updates): append the entry text (the one-line
 `YYYY-MM-DD — summary — Status: X — why` string) to `.opencode/.session-manual-logs`

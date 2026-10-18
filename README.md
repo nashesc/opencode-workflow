@@ -99,15 +99,16 @@ A modular, production-ready AI engineering harness for [OpenCode](https://openco
 
 ### 1. Dual-Layer Memory Architecture
 - **Project Memory (`.opencode/memory/`):** Tracked in git, auto-loaded on every session via `opencode.jsonc` (explicit `instructions` file list — never a `*.md` glob, so archive files stay unloaded). Uses reverse-chronological order (`YYYY-MM-DD — summary — why`) and auto-archives oldest entries after 50.
-- **Global Vault Memory (Obsidian via MCP):** Durable knowledge repository surviving across projects (`OpenCode/Memory.md` index + `OpenCode/Projects/<name>/project.md` / `wip.md`, plus `OpenCode/Decisions.md` / `OpenCode/Errors.md`). Syncs automatically through MCP tools and auto-archives at the 50-entry threshold to `*_archive.md`.
+- **Global Vault Memory (Obsidian, file-direct):** Durable cross-project store (`OpenCode/Context.md` prefs + constraints, `Decisions.md`, `Errors.md`, `Projects/<name>/project.md` / `wip.md`, `Memory.md` index). Read and written by `scripts/memory.js` (no MCP, tested): `add` dedupes, flags contradictions, supersedes, rejects secrets, archives at 50; `recall` retrieves; `sync` regenerates the index block and `~/.config/opencode/memory/profile.md`, which is auto-loaded every session. Design, success criteria, and manual checks: `docs/memory-v3.md`.
 
 ### 2. Hybrid Auto-Logging & Session Lifecycle
 - `/start-session` — Captures start time and initial git HEAD.
 - `/test` — Automatically stages up to 3 failure summaries into `.opencode/.pending-test-errors`.
 - `pre-commit.js` (portable; `pre-commit.ps1` fallback) — stages test failures to `.opencode/.pending-hook-errors` without blocking commits; a gitleaks finding blocks the commit.
-- `/end-session` — Analyzes git commits, completed tasks, and staged errors; deduplicates against manual logs; presents candidates one-by-one for approval (`(d)ecision`, `(e)rror`, `(s)kip`, `(q)uit`, or inline edit); cleans up scratch files; and offers to install the hook.
+- `/end-session` — Analyzes git commits, completed tasks, and staged errors; deduplicates against manual logs; presents candidates one-by-one for approval (`(d)ecision`, `(e)rror`, `(p)reference/constraint`, `(s)kip`, `(q)uit`, or inline edit); cleans up scratch files; and offers to install the hook.
 
 ### 3. Subagent Swarm
+- **Skills:** `build-verify` (criteria + evidence before "done"), `debugging`, `frontend-verify`, plus `review-checklist`, `test-pipeline`, `security-checklist`, `web-research`.
 - **Planner & Reviewers:** Decomposes complex feature specs into committable TDD tasks. Specialized domain subagents (`database-engineer`, `architecture-reviewer`, `ux-architect`, `dx-advocate`, `project-expert`, `reviewer`, `security`, `tester`) collaborate to deliver verified solutions.
 
 ### 4. Token Reporting Plugin (optional project-template feature)

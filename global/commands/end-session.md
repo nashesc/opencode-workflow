@@ -42,6 +42,12 @@ From the gathered context, build a deduplicated candidate list. For each source:
 
 - **Pending hook errors:** Each line is already formatted — include as-is, type ERROR.
 
+- **Corrections and stated preferences:** scan the session for things the user
+  corrected or said to always/never do that were NOT already captured
+  (not in `.session-manual-logs`). Propose each as type PREF or CONSTRAINT:
+  `memory.js add pref|constraint "<rule>" [--scope user|project]`. Capture the
+  rule, not the incident.
+
 - **WIP/Project updates:** Generate at most one `wip.md` update candidate (`OpenCode/Projects/<name>/wip.md`: objective, status, blockers, exactly one next action) and, only if purpose/stack/verified commands changed, one `project.md` update candidate (`OpenCode/Projects/<name>/project.md`, update `Last verified: <date> <commit>`). Propose each in the same approval format below; write only on approval. Every vault write requires explicit approval.
 
 **Deduplication:** Drop any candidate whose summary is substantially the same as
@@ -68,6 +74,7 @@ Candidate [N of M]:
 Options:
   (d) Log as decision
   (e) Log as error
+  (p) Log as preference/constraint (PREF/CONSTRAINT candidates)
   (s) Skip this candidate
   (q) Quit — stop reviewing, leave remaining candidates unlogged
   Or type an edited entry line, then follow with (d) or (e).
@@ -77,20 +84,22 @@ Options:
 Wait for the user's response for each candidate before moving to the next.
 
 **On (d):** Write to `.opencode/memory/decisions.md` (prepend after header) and
-mirror to the vault file-direct — no MCP (stays off per token gate). Invoke
-(publisher precedent — script is idempotent, reruns are no-ops, archive check
-runs inside; never blocks the session):
+mirror file-direct (no MCP; dedupe + archive run inside; never blocks):
 ```powershell
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$env:USERPROFILE\.config\opencode\scripts\Mirror-Memory.ps1" -Entry "<entry>" -Type decisions
+node "$env:USERPROFILE\.config\opencode\scripts\memory.js" add decision "<summary>" --why "<why>"
 ```
+On `SIMILAR <id>`: `--supersede <id>` if it replaces the old entry, else `--force`.
 Also append the entry to `.opencode/.session-manual-logs`.
 
 **On (e):** Write to `.opencode/memory/errors.md` (prepend after header, format
 `YYYY-MM-DD — summary — Status: Open — rationale`) and mirror file-direct:
 ```powershell
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$env:USERPROFILE\.config\opencode\scripts\Mirror-Memory.ps1" -Entry "<entry>" -Type errors
+node "$env:USERPROFILE\.config\opencode\scripts\memory.js" add error "<summary>" --why "<rationale>"
 ```
-Also append the entry to `.opencode/.session-manual-logs`.
+Same `SIMILAR` handling as (d). Also append the entry to `.opencode/.session-manual-logs`.
+
+**On (p):** Run `memory.js add pref|constraint "<rule>"` (scope per the candidate;
+default pref→user, constraint→project). Handle `SIMILAR` as in (d).
 
 **On (s):** Skip, move to the next candidate.
 
