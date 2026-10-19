@@ -17,200 +17,246 @@ const line = (date, i, { session = "ses_abc", prompt = "p1", input = 100, cacheR
 // Relative date so days-mode tests keep passing as the calendar moves.
 const dayOffset = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
 
+// Output shapes the assertions need. Table rows are the only lines that start
+// with a bare MM-DD HH:MM timestamp; findings are the only numbered ones.
+const linesOf = (out) => out.split("\n");
+const body = (out) => linesOf(out).slice(1, -1);
+const rowsOf = (out) => body(out).filter((l) => /^\d\d-\d\d(\s{2,}|\s\d\d:\d\d)/.test(l));
+const findingsOf = (out) => body(out).filter((l) => /^\d\. /.test(l));
+const numberAfter = (lineText, label) => +lineText.match(new RegExp(`${label}:\\s*([\\d.]+)`))[1].replace(/[KM]/, "");
+
 test("empty/missing vault → friendly message, never throws", () => {
   assert.equal(getTokensSummary(path.join(os.tmpdir(), `nope-${Date.now()}.md`)), "No token data yet.");
 });
 
-test("default window is the newest 10 requests, window printed in header", () => {
+test("the report is wrapped in one balanced code fence", () => {
   const p = tmp();
   for (let i = 0; i < 15; i++) appendReport(rep(i), p);
   const out = getTokensSummary(p);
-  assert.match(out, /window: last 10 requests/);
-  assert.match(out, /rows 10 of 15 requests/);
-  assert.ok(out.includes("m14"), "newest present");
-  assert.ok(!out.includes("m4 "), "oldest excluded");
-  assert.match(out, /\| 1 session \|/, "session count comes from the window, not the scan");
+  assert.equal(linesOf(out)[0], "```", "opens with a fence");
+  assert.equal(linesOf(out)[linesOf(out).length - 1], "```", "closes with a fence");
+  assert.equal(linesOf(out).filter((l) => l === "```").length, 2, "exactly two fences");
+});
+
+test("the whole report stays under 25 lines", () => {
+  const p = tmp();
+  const rows = [];
+  for (let i = 0; i < 40; i++) rows.push(line("2026-10-18", i, { prompt: `q${i}`, session: `ses_${i % 8}`, input: 1000, cacheRead: 1001 }));
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
+  for (const opts of [{}, { maxPrompts: 30 }, { maxPrompts: 1 }, { kind: "days", days: 7 }, { kind: "days", days: 30 }]) {
+    const out = getTokensSummary(p, opts);
+    assert.ok(linesOf(out).length < 25, `${JSON.stringify(opts)} → ${linesOf(out).length} lines`);
+  }
+});
+
+test("only the six agreed sections are present", () => {
+  const p = tmp();
+  for (let i = 0; i < 15; i++) appendReport(rep(i), p);
+  const b = body(getTokensSummary(p));
+  assert.match(b[0], /^TOKEN USAGE — 15 requests counted, latest 10 shown \| \d\d-\d\d \d\d:\d\d → \d\d-\d\d \d\d:\d\d \| 1 chats$/, "header: counts, range, chats");
+  assert.match(b[1], /^TOTAL: [\d.]+[KM]? tokens \| \d+ rounds \| [\d.]+[KM]? per request \(average\)$/);
+  assert.equal(b[2], "WHAT TO FIX");
+  assert.ok(b.includes(linesOf(getTokensSummary(p)).find((l) => l.startsWith("SPLIT:"))), "a SPLIT line");
+  assert.ok(b.some((l) => /^LATEST 10 REQUESTS$/.test(l)), "a table title");
+  assert.equal(linesOf(getTokensSummary(p)).at(-2), "Round = one back-and-forth; each round re-sends the whole chat.");
+});
+
+test("the cut content is gone: ids, per-round columns, chat list, legend, notes", () => {
+  const p = tmp();
+  const rows = [];
+  for (let i = 0; i < 12; i++) rows.push(line("2026-10-18", i, { prompt: `p${i}`, session: `ses_${i % 4}`, input: 1000, cacheRead: 1001 }));
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
+  const out = getTokensSummary(p);
+  for (const banned of ["msg_", "m0 ", "RE-READ/RND", "NEW/RND", "rollup", "Chat ", "LEGEND", "Every number is a real count",
+    "cut short", "memory expired", "Memory expired", "not shown", "(dup?)", "<< heaviest", "Read all", "model "]) {
+    assert.ok(!out.includes(banned), `"${banned}" must not appear`);
+  }
+  assert.match(linesOf(out).find((l) => l.startsWith("TIME")), /^TIME\s+ROUNDS\s+TOKENS\s+NOTE$/, "three columns plus the note");
+});
+
+test("WHAT TO FIX holds at most 3 numbered findings, each with one action", () => {
+  const p = tmp();
+  const rows = [];
+  for (let i = 0; i < 20; i++) rows.push(line("2026-10-18", i, { prompt: `p${i}`, session: `ses_${i % 5}`, input: 1000, cacheRead: i * 50 }));
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
+  const out = getTokensSummary(p);
+  const found = findingsOf(out);
+  assert.ok(found.length >= 1 && found.length <= 3, `${found.length} findings`);
+  assert.deepEqual(found.map((l) => l.slice(0, 3)), found.map((l, i) => `${i + 1}. `), "numbered 1..n in order");
+  for (const f of found) assert.ok(f.includes(" → "), `finding carries one action: ${f}`);
+});
+
+test("no finding is emitted without an action, and the cost wording is gone", () => {
+  const p = tmp();
+  const rows = [];
+  for (let i = 0; i < 20; i++) rows.push(line("2026-10-18", i, { prompt: `p${i}`, session: `ses_${i % 5}`, input: 1000, cacheRead: i * 50 }));
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
+  const out = getTokensSummary(p);
+  for (const f of findingsOf(out)) assert.ok(f.includes(" → "), `finding carries one action: ${f}`);
+  assert.ok(!out.includes("already efficient"), "praise is not a finding");
+  assert.ok(!out.includes("of cost"), "the finding counts tokens, not cost");
+  assert.match(findingsOf(out).find((l) => /new text/.test(l)), /^\d\. \d+% of tokens are new text sent at full price → /);
+});
+
+test("findings fire only on the numbers that justify them", () => {
+  // One request, warm start, nothing dominant: nothing to fix, and it says so.
+  const p = tmp();
+  fs.writeFileSync(p, line("2026-10-18", 1, { prompt: "solo", input: 100, cacheRead: 900 }), "utf8");
+  const clean = findingsOf(getTokensSummary(p));
+  assert.ok(clean.length >= 1 && clean.length <= 3, `${clean.length} findings`);
+  assert.ok(clean.some((l) => /nothing stands out/.test(l)), `no waste alleged: ${clean.join(" | ")}`);
+  assert.ok(!clean.some((l) => /already efficient/.test(l)), "a rule that only praises is not a finding");
+  assert.ok(!clean.some((l) => /restarted from scratch/.test(l)), "a warm start is not called waste");
+  assert.ok(!clean.some((l) => /Chat /.test(l)), "a one-chat window has no other chat to move to");
+  // Same request, but it started from scratch: the wasted tokens are named.
+  const q = tmp();
+  fs.writeFileSync(q, [
+    line("2026-10-18", 1, { prompt: "cold", input: 500_000, cacheRead: 0, time: "10:00:00" }),
+    line("2026-10-18", 2, { prompt: "cold", input: 50, cacheRead: 900, time: "10:00:10" }),
+  ].join("\n"), "utf8");
+  assert.match(findingsOf(getTokensSummary(q))[0],
+    /^1\. 1 request restarted from scratch, re-sending 500K tokens at full price → start a new chat per task, not mid-task\.$/);
+});
+
+test("the heaviest chat is named in a finding, with a label that cannot collide", () => {
+  const p = tmp();
+  const rows = [];
+  for (let i = 0; i < 8; i++) rows.push(line("2026-10-18", i, { prompt: `a${i}`, session: "ses_ead8aa11", input: 100, time: `10:0${i}:00` }));
+  for (let i = 0; i < 2; i++) rows.push(line("2026-10-18", `z${i}`, { prompt: `b${i}`, session: "ses_ead8bb22", input: 100, time: `11:0${i}:00` }));
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
+  const finding = findingsOf(getTokensSummary(p)).find((l) => l.includes("Chat "));
+  assert.ok(finding, "the dominant chat is reported");
+  assert.match(finding, /^1\. Chat ead8a…+ alone used \d+% of all tokens → start a new chat when a task changes\.$/, `label: ${finding}`);
+});
+
+test("each row shows time, rounds, tokens and the from-scratch note", () => {
+  const p = tmp();
+  fs.writeFileSync(p, [
+    line("2026-10-19", 1, { prompt: "warm", input: 100, cacheRead: 900, time: "05:24:54" }),
+    line("2026-10-19", 2, { prompt: "cold", input: 61676, cacheRead: 140, time: "04:09:26" }),
+  ].join("\n"), "utf8");
+  const rows = rowsOf(getTokensSummary(p));
+  assert.match(rows[0], /^10-19 05:24\s+1\s+1K$/, "no note, no trailing space");
+  assert.match(rows[1], /^10-19 04:09\s+1\s+61\.9K\s+restarted from scratch, 61\.7K re-sent$/);
+});
+
+test("numbers print as 44K / 1.28M, never as six digits", () => {
+  const p = tmp();
+  fs.writeFileSync(p, line("2026-10-18", 1, { prompt: "x", input: 1_277_462, cacheRead: 44_164 }), "utf8");
+  const out = getTokensSummary(p);
+  assert.match(rowsOf(out)[0], /\s1\.32M\s+restarted from scratch, 1\.28M re-sent$/, "K and M with at most 2 decimals");
+  assert.ok(!/\d{5,}/.test(out), "no raw six-digit number anywhere in the report");
+});
+
+test("default table is the newest 10 requests", () => {
+  const p = tmp();
+  for (let i = 0; i < 15; i++) appendReport(rep(i), p);
+  const out = getTokensSummary(p);
+  assert.equal(rowsOf(out).length, 10, "10 rows");
+  assert.deepEqual(rowsOf(out).map((l) => l.slice(0, 11)),
+    Array.from({ length: 10 }, () => rowsOf(out)[0].slice(0, 11)), "all rows share the newest timestamp shape");
+  assert.match(linesOf(out).find((l) => l.startsWith("TOKEN USAGE")), /\| 1 chats$/);
 });
 
 test("--last N narrows rows, --days N filters by entry date", () => {
   const p = tmp();
   for (let i = 0; i < 15; i++) appendReport(rep(i), p);
-  assert.match(getTokensSummary(p, { n: 3 }), /window: last 3 requests \|/);
-  assert.match(getTokensSummary(p, { n: 3 }), /rows 3 of 15 requests/);
+  assert.equal(rowsOf(getTokensSummary(p, { n: 3 })).length, 3);
+  assert.match(linesOf(getTokensSummary(p, { n: 3 })).find((l) => l.startsWith("TOKEN USAGE")), /15 requests counted, latest 3 shown/, "the header says what was counted and what is shown");
   const q = tmp();
   fs.writeFileSync(q, [line("2026-10-18", 1, { prompt: "new" }), line("2026-09-01", 2, { prompt: "old" })].join("\n"), "utf8");
   const days = getTokensSummary(q, { kind: "days", n: 7 });
-  assert.match(days, /window: last 7 days/);
-  assert.match(days, /rows 1 of 1 requests/);
-  assert.ok(!days.includes("old"), "pre-window entry excluded");
+  assert.equal(rowsOf(days).length, 1, "pre-window entry excluded");
+  assert.match(linesOf(days).find((l) => l.startsWith("TOKEN USAGE")), /^TOKEN USAGE — 7 days: 1 requests counted/, "days mode keeps its window in the header");
 });
 
-test("each row reports steps, per-step cache-read and per-step fresh-in", () => {
+test("TOTAL equals the sum of the requests behind it", () => {
   const p = tmp();
-  const base = rep(1);
-  appendReport({ ...base, messageID: "s1", promptID: "u9", total: 100,
-    vaultFields: { input: 50, output: 30, reasoning: 10, cacheRead: 5, cacheWrite: 5 } }, p);
-  appendReport({ ...base, messageID: "s2", promptID: "u9", total: 200,
-    vaultFields: { input: 60, output: 40, reasoning: 20, cacheRead: 6, cacheWrite: 6 } }, p);
+  const rows = [];
+  let expected = 0;
+  for (let r = 0; r < 12; r++) {
+    const input = 1000 + r, cacheRead = 50 * r;
+    rows.push(line("2026-10-18", `m${r}`, { prompt: `p${r}`, session: `ses_${r % 3}`, input, cacheRead, time: `10:${String(r).padStart(2, "0")}:00` }));
+    expected += input + cacheRead + 40;
+  }
+  fs.writeFileSync(p, rows.join("\n"), "utf8");
   const out = getTokensSummary(p);
-  assert.match(out, /steps:\s*2 total:\s*300/, "steps summed into one row");
-  assert.match(out, /cache-read\/step:\s*6 /, "cacheRead 11 over 2 steps rounds to 6");
-  assert.match(out, /fresh-in\/step:\s*55/, "input 110 over 2 steps");
+  const total = linesOf(out).find((l) => l.startsWith("TOTAL:"));
+  const printed = numberAfter(total, "TOTAL") * 1000;
+  assert.ok(Math.abs(printed - expected) / expected < 0.01, `${total} (${printed}) vs summed ${expected} — display rounds to 2 decimals`);
+  assert.match(total, /\| 12 rounds \|/, "one round per request here");
+  assert.match(linesOf(out).find((l) => l.startsWith("SPLIT:")), /^SPLIT: \d+% re-read \(cheap\) \| \d+% new text \(full price\)$/);
 });
 
-test("one rollup line per session with a printed row, over that session's whole window", () => {
+test("the header range spans the oldest first round to the newest last round", () => {
   const p = tmp();
   fs.writeFileSync(p, [
-    line("2026-10-18", 1, { session: "ses_new", prompt: "a", cacheRead: 900, time: "10:00:00" }),
-    line("2026-10-18", 2, { session: "ses_new", prompt: "b", cacheRead: 800, time: "10:00:30" }),
-    line("2026-10-18", 3, { session: "ses_old", prompt: "c", cacheRead: 700, time: "10:01:00" }),
+    line("2026-10-18", 1, { prompt: "r1", time: "09:01:29" }),
+    line("2026-10-18", 2, { prompt: "r1", time: "09:01:55" }),
+    line("2026-10-18", 3, { prompt: "r2", time: "09:02:10" }),
   ].join("\n"), "utf8");
   const out = getTokensSummary(p);
-  const rolls = out.split("\n").filter((l) => l.startsWith("rollup "));
-  assert.equal(rolls.length, 2, "one line per session in the window, not just the newest");
-  assert.equal(rolls[0], "rollup ses_old: requests:1 steps:1 total(sum of steps):840 cache-read/step:700 fresh-in/step:100 2026-10-18 10:01:00 → 2026-10-18 10:01:00");
-  assert.equal(rolls[1], "rollup ses_new: requests:2 steps:2 total(sum of steps):1,980 cache-read/step:850 fresh-in/step:100 2026-10-18 10:00:00 → 2026-10-18 10:00:30");
-  assert.match(out, /\| 2 sessions \|/, "both sessions printed, both counted");
+  assert.match(linesOf(out).find((l) => l.startsWith("TOKEN USAGE")), /\| 10-18 09:01 → 10-18 09:02 \|/);
+  assert.match(rowsOf(out)[0], /^10-18 09:02\s+1\s/, "row is labelled by its last round");
+  assert.match(rowsOf(out)[1], /^10-18 09:01\s+2\s/, "the two-round request is one row");
 });
 
-test("rows are newest-first and the header range is never reversed", () => {
+test("rows are newest-first even when the log is oldest-first", () => {
   const p = tmp();
   fs.writeFileSync(p, [
     line("2026-10-18", 1, { prompt: "old", time: "08:47:55" }),
     line("2026-10-18", 2, { prompt: "mid", time: "08:52:04" }),
     line("2026-10-18", 3, { prompt: "new", time: "09:01:55" }),
   ].join("\n"), "utf8");
-  const out = getTokensSummary(p);
-  const labels = out.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).map((l) => l.slice(0, 19).trim());
-  assert.deepEqual(labels, ["2026-10-18 09:01:55", "2026-10-18 08:52:04", "2026-10-18 08:47:55"], "ascending input still prints newest-first");
-  assert.match(out, /window: last 10 requests \| 2026-10-18 08:47:55 → 2026-10-18 09:01:55 \|/);
+  assert.deepEqual(rowsOf(getTokensSummary(p)).map((l) => l.slice(0, 11)), ["10-18 09:01", "10-18 08:52", "10-18 08:47"]);
 });
 
-test("a request is labelled by its last step time, not its first", () => {
-  const p = tmp();
-  fs.writeFileSync(p, [
-    line("2026-10-18", 1, { prompt: "r1", time: "09:01:29" }),
-    line("2026-10-18", 2, { prompt: "r1", time: "09:01:35" }),
-    line("2026-10-18", 3, { prompt: "r1", time: "09:01:55" }),
-    line("2026-10-18", 4, { prompt: "r2", time: "09:02:10" }),
-  ].join("\n"), "utf8");
-  const out = getTokensSummary(p);
-  assert.match(out, /2026-10-18 09:01:55 r1\s+steps: 3/, "label is the newest step of the request");
-  assert.match(out, /window: last 10 requests \| 2026-10-18 09:01:29 → 2026-10-18 09:02:10 \|/, "range spans first step of oldest to last step of newest");
-});
-
-test("over-budget windows drop oldest rows and say how many", () => {
+test("a wide --last N drops oldest rows and says how many", () => {
   const p = tmp();
   const rows = [];
   for (let i = 0; i < 30; i++) rows.push(line("2026-10-18", i, { prompt: `p${i}`, session: `ses_${i % 6}`, time: `10:${String(i).padStart(2, "0")}:00` }));
   fs.writeFileSync(p, rows.join("\n"), "utf8");
   const out = getTokensSummary(p, { maxPrompts: 30 });
-  assert.ok(out.split("\n").length <= 15, `${out.split("\n").length} lines`);
-  assert.match(out, /\+\d+ more rows \(oldest of 30 requests\)/);
-  assert.ok(!/p0\s/.test(out), "the oldest row was the one dropped");
+  assert.ok(linesOf(out).length < 25, `${linesOf(out).length} lines`);
+  assert.match(out, /\+\d+ older requests not shown/);
+  assert.ok(!rowsOf(out).some((l) => l.includes("10-00")), "the oldest row was the one dropped");
 });
 
-test("in within 1% of cache-read flags a possible double-count", () => {
-  const p = tmp();
-  fs.writeFileSync(p, line("2026-10-18", 1, { prompt: "x", input: 1000, cacheRead: 1005 }), "utf8");
-  const out = getTokensSummary(p);
-  assert.match(out, /!dbl/, "row marked");
-  assert.match(out, /flag: possible double-count — in within 1% of cache-read on 1 request/);
-  assert.ok(out.split("\n").length <= 15, "flag fits the line budget");
-});
-
-test("rows near but not within 1% are not flagged", () => {
-  const p = tmp();
-  fs.writeFileSync(p, line("2026-10-18", 1, { prompt: "x", input: 1000, cacheRead: 950 }), "utf8");
-  const out = getTokensSummary(p);
-  assert.ok(!out.includes("dbl"), "5% apart is not a double-count");
-});
-
-test("a cold-then-warm request is not a double-count and is marked cold", () => {
-  const p = tmp();
-  // Real shape, from prompt msg_15258e0d1001OAMYpdkRYK3pcK (2026-10-19 04:09):
-  // step 1 reads nothing from cache, step 2 reads nearly all of it. The sums
-  // (62,474 in vs 61,956 cache-read) sit 0.8% apart but no step repeats.
-  fs.writeFileSync(p, [
-    line("2026-10-19", 1, { prompt: "msg_coldwarm", input: 61676, cacheRead: 140, time: "04:09:26" }),
-    line("2026-10-19", 2, { prompt: "msg_coldwarm", input: 798, cacheRead: 61816, time: "04:09:32" }),
-  ].join("\n"), "utf8");
-  const out = getTokensSummary(p);
-  assert.ok(!out.includes("!dbl"), "no step is self-similar, so no flag");
-  assert.ok(!out.includes("possible double-count"), "flag line stays away");
-  assert.match(out, /msg_coldwarm.*cold:61,676/, "the cold start names the first step's fresh input");
-  assert.ok(out.split("\n").length <= 15, `${out.split("\n").length} lines`);
-});
-
-test("one step with in within 1% of its own cache-read still flags", () => {
-  const p = tmp();
-  // Two warm steps plus one self-similar step: the request-level sums are far
-  // apart, so only a per-step check finds this.
-  fs.writeFileSync(p, [
-    line("2026-10-18", 1, { prompt: "x", input: 1000, cacheRead: 995, time: "10:00:00" }),
-    line("2026-10-18", 2, { prompt: "x", input: 200, cacheRead: 900, time: "10:00:10" }),
-    line("2026-10-18", 3, { prompt: "x", input: 4000, cacheRead: 900, time: "10:00:20" }),
-  ].join("\n"), "utf8");
-  const out = getTokensSummary(p);
-  assert.match(out, /!dbl/, "the 1000/995 step is flagged even though the sums differ");
-  assert.match(out, /flag: possible double-count — in within 1% of cache-read on 1 request/);
-});
-
-test("cold marker tracks the 5% cache share of the first step", () => {
-  const p = tmp();
-  const build = (input, cacheRead) => fs.writeFileSync(p, [
-    line("2026-10-18", 1, { prompt: "x", input, cacheRead, time: "10:00:00" }),
-    line("2026-10-18", 2, { prompt: "x", input: 50, cacheRead: 900, time: "10:00:10" }),
-  ].join("\n"), "utf8");
-  build(1000, 0);
-  assert.match(getTokensSummary(p), /cold:1,000/, "no cache read at all is cold");
-  build(100, 900);
-  assert.ok(!getTokensSummary(p).includes("cold:"), "90% cache share is warm");
-  build(95, 5);
-  assert.ok(!getTokensSummary(p).includes("cold:"), "exactly 5% is not under it");
-  build(96, 4);
-  assert.match(getTokensSummary(p), /cold:96/, "3.9% cache share is cold");
-  // The earliest step decides, whatever order the vault lists them in.
-  fs.writeFileSync(p, [
-    line("2026-10-18", 2, { prompt: "x", input: 50, cacheRead: 900, time: "10:00:10" }),
-    line("2026-10-18", 1, { prompt: "x", input: 1000, cacheRead: 0, time: "10:00:00" }),
-  ].join("\n"), "utf8");
-  assert.match(getTokensSummary(p), /cold:1,000/, "cold start found in an ascending vault");
-});
-
-test("output stays under 15 lines with a full window plus flag", () => {
+test("a request the log cut short is left out of the totals, silently", () => {
   const p = tmp();
   const rows = [];
-  for (let i = 0; i < 10; i++) rows.push(line("2026-10-18", i, { prompt: `p${i}`, input: 1000, cacheRead: 1001 }));
+  for (let i = 2; i >= 0; i--) rows.push(line("2026-10-18", 100 + i, { prompt: `n${i}`, session: "ses_n", time: `10:0${i}:00` }));
+  for (let i = 28; i >= 0; i--) rows.push(line("2026-10-18", i, { prompt: "big", session: "ses_p", time: `09:${String(i).padStart(2, "0")}:00` }));
   fs.writeFileSync(p, rows.join("\n"), "utf8");
-  const out = getTokensSummary(p);
-  assert.ok(out.split("\n").length <= 15, `${out.split("\n").length} lines`);
-  assert.equal(out.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).length, 10, "10 rows");
+  const cut = getTokensSummary(p, { maxPrompts: 10, limit: 32 });
+  // The cut request's totals are incomplete, so it is dropped from TOTAL — the
+  // report no longer discloses that, which is the agreed presentation.
+  assert.match(linesOf(cut).find((l) => l.startsWith("TOTAL:")), /\| 3 rounds \|/, "only the 3 complete requests are counted");
+  assert.ok(!rowsOf(cut).some((l) => l.includes("big")), "the cut request is not printed either");
+  const whole = getTokensSummary(p, { maxPrompts: 10, limit: 33 });
+  assert.match(linesOf(whole).find((l) => l.startsWith("TOTAL:")), /\| 32 rounds \|/, "read whole, it counts");
 });
 
-test("15-line cap holds for a wide --last N window with many sessions and a flag", () => {
+test("the scan widens until the table window is full", () => {
   const p = tmp();
-  const rows = [];
-  for (let i = 0; i < 40; i++) rows.push(line("2026-10-18", i, { prompt: `q${i}`, session: `ses_${i % 8}`, input: 1000, cacheRead: 1001 }));
-  fs.writeFileSync(p, rows.join("\n"), "utf8");
-  for (const maxPrompts of [20, 40, 1]) {
-    const out = getTokensSummary(p, { maxPrompts });
-    assert.ok(out.split("\n").length <= 15, `maxPrompts ${maxPrompts} → ${out.split("\n").length} lines`);
-  }
+  // 800 entries but only 8 requests: the ceiling cannot reach 10.
+  fs.writeFileSync(p, multiStepVault(8, 100), "utf8");
+  const cut = getTokensSummary(p, { maxPrompts: 10, limit: 50 });
+  assert.equal(rowsOf(cut).length, 5, "5 complete requests fit");
+  assert.ok(linesOf(cut).length < 25);
+  const whole = getTokensSummary(p, { maxPrompts: 10, limit: 300 });
+  // 800 entries exist but the parse pool is capped at SCAN_CEIL (500), so only
+  // 5 complete requests are readable — and the header counts what it has.
+  assert.equal(rowsOf(whole).length, 5, "every request the scan could read");
+  assert.match(linesOf(whole).find((l) => l.startsWith("TOKEN USAGE")), /^TOKEN USAGE — 4 requests counted, latest 5 shown \|/, "the header counts what was counted, not what was asked for");
 });
 
-test("total is labelled as a step sum, never as context size", () => {
-  const p = tmp();
-  appendReport(rep(1), p);
-  assert.match(getTokensSummary(p), /total = sum across all steps, not context size/);
-});
-
-test("unparseable lines are skipped, summary still renders", () => {
+test("unparseable lines are skipped, report still renders", () => {
   const p = tmp();
   appendReport(rep(1), p);
   fs.appendFileSync(p, "this is not an entry line\n");
   const out = getTokensSummary(p);
-  assert.ok(out.includes("m1"));
+  assert.ok(out.startsWith("```"), "fence intact");
   assert.ok(!out.includes("not an entry"));
 });
 
@@ -218,59 +264,27 @@ test("old date-only lines still parse (backward compat)", () => {
   const p = tmp();
   fs.writeFileSync(p, "# TokenUsage\n\n2026-10-14 — session:ses_old msg:m_old model:openai/gpt-5 total:100 (in:50 out:30 reason:10 cache-read:5 cache-write:5)\n", "utf8");
   const out = getTokensSummary(p);
-  assert.match(out, /window: last 10 requests/);
-  assert.match(out, /rows 1 of 1 requests/);
-  assert.match(out, /2026-10-14\s+m_old/);
-});
-
-test("rollup aggregates only the window, and its range stays inside the header range", () => {
-  const p = tmp();
-  const rows = [];
-  for (let i = 0; i < 20; i++) rows.push(line("2026-10-18", i, { prompt: `w${i}`, session: "ses_w", time: `10:${String(i).padStart(2, "0")}:00` }));
-  fs.writeFileSync(p, rows.join("\n"), "utf8");
-  const out = getTokensSummary(p, { maxPrompts: 3 });
-  const roll = out.split("\n").find((l) => l.startsWith("rollup "));
-  assert.match(roll, /requests:3 steps:3/, "the 3 window requests, not all 20 scanned");
-  const [lo, hi] = out.split("\n")[0].match(/\| (\S+ \S+) → (\S+ \S+) \|/).slice(1);
-  const [rlo, rhi] = roll.match(/ (\S+ \S+) → (\S+ \S+)$/).slice(1);
-  assert.ok(rlo >= lo && rhi <= hi, `rollup ${rlo} → ${rhi} inside header ${lo} → ${hi}`);
-});
-
-test("days mode reports a scan-limit cut window and still spans its days", () => {
-  const p = tmp();
-  const rows = [];
-  for (let d = 4; d >= 0; d--) rows.push(line(dayOffset(d), 1, { prompt: `d${d}`, session: "ses_d" }));
-  rows.push(line(dayOffset(30), 9, { prompt: "ancient", session: "ses_d" }));
-  fs.writeFileSync(p, rows.join("\n"), "utf8");
-  const cut = getTokensSummary(p, { kind: "days", days: 7, limit: 5 });
-  assert.match(cut, new RegExp(`\\| ${dayOffset(4)} 10:00:00 → ${dayOffset(0)} 10:00:00 \\|`), "range spans the window days");
-  assert.match(cut, /window truncated at scan limit/);
-  assert.ok(!cut.includes("ancient"), "entry older than the window excluded");
-  const whole = getTokensSummary(p, { kind: "days", days: 7, limit: 300 });
-  assert.ok(!whole.includes("window truncated at scan limit"), "no marker when every entry was scanned");
-});
-
-test("a request cut by the scan limit is marked ~partial and kept out of the rollup", () => {
-  const p = tmp();
-  const rows = [];
-  // Newest-first like the vault: three fresh requests, then a 29-step
-  // request whose first step is the oldest entry in the file.
-  for (let i = 2; i >= 0; i--) rows.push(line("2026-10-18", 100 + i, { prompt: `n${i}`, session: "ses_n", time: `10:0${i}:00` }));
-  for (let i = 28; i >= 0; i--) rows.push(line("2026-10-18", i, { prompt: "big", session: "ses_p", time: `09:${String(i).padStart(2, "0")}:00` }));
-  fs.writeFileSync(p, rows.join("\n"), "utf8");
-  const cut = getTokensSummary(p, { maxPrompts: 10, limit: 32 });
-  assert.match(cut, /big\s+steps:29 total:.*~partial/, "oldest request marked partial");
-  assert.ok(!cut.includes("rollup ses_p"), "a session whose only request is partial gets no rollup");
-  assert.match(cut, /rollup ses_n: requests:3 steps:3/);
-  const whole = getTokensSummary(p, { maxPrompts: 10, limit: 33 });
-  assert.ok(!whole.includes("~partial"), "no marker when the scan reached past the first step");
+  assert.match(linesOf(out).find((l) => l.startsWith("TOKEN USAGE")), /\| 10-14\s+→ 10-14 \|/);
+  assert.equal(rowsOf(out).length, 1);
 });
 
 test("unreadable path never throws", () => {
   assert.ok(getTokensSummary("Z:\\\0\\nope.md").startsWith("Token summary unavailable"));
 });
 
-// Newest-first vault: `reqs` requests of `steps` steps each, one session.
+test("the sections appear in the agreed order", () => {
+  const p = tmp();
+  for (let i = 0; i < 15; i++) appendReport(rep(i), p);
+  const b = body(getTokensSummary(p));
+  const at = (name) => b.findIndex((l) => l.startsWith(name));
+  assert.ok(at("TOKEN USAGE") < at("TOTAL:"), "header then total");
+  assert.ok(at("TOTAL:") < at("WHAT TO FIX"), "total then findings");
+  assert.ok(at("WHAT TO FIX") < at("SPLIT:"), "findings then split");
+  assert.ok(at("SPLIT:") < at("LATEST"), "split then table");
+  assert.ok(at("LATEST") < b.length - 1, "table before the Round definition");
+});
+
+// Newest-first vault: `reqs` requests of `steps` rounds each, one session.
 const multiStepVault = (reqs, steps, { session = "ses_x", date = "2026-10-18" } = {}) => {
   const clock = (n) => [String(Math.floor(n / 3600)).padStart(2, "0"),
     String(Math.floor(n / 60) % 60).padStart(2, "0"), String(n % 60).padStart(2, "0")].join(":");
@@ -282,95 +296,3 @@ const multiStepVault = (reqs, steps, { session = "ses_x", date = "2026-10-18" } 
   }
   return rows.join("\n");
 };
-
-test("a scan too short to fill the window widens instead of under-reporting", () => {
-  const p = tmp();
-  fs.writeFileSync(p, multiStepVault(20, 10), "utf8");
-  // 20 entries hold only 2 requests, far short of 10 — the scan must grow.
-  const out = getTokensSummary(p, { maxPrompts: 10, limit: 20 });
-  assert.equal(out.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).length, 10, "window filled");
-  assert.match(out, /scanned 126\+ entries \(raised from limit 20 to 126\)/);
-  assert.ok(!out.includes("truncated at scan limit"), "filled window, nothing to disclose");
-  assert.match(out, /window: last 10 requests \|/, "header claim now true");
-});
-
-test("a window the scan cannot fill says how many of the requested it got", () => {
-  const p = tmp();
-  // 800 entries but only 8 requests: even the ceiling cannot reach 10.
-  fs.writeFileSync(p, multiStepVault(8, 100), "utf8");
-  const cut = getTokensSummary(p, { maxPrompts: 10, limit: 50 });
-  assert.match(cut, /window truncated at scan limit: 3 of 10 requested/, "shortfall counted and named");
-  assert.equal(cut.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).length, 3);
-  assert.match(cut, /scanned 300\+ entries \(raised from limit 50 to 300\)/);
-  assert.match(cut, /~partial/, "the cut request is still marked");
-  const days = getTokensSummary(p, { kind: "days", days: 7, maxPrompts: 10, limit: 300 });
-  assert.match(days, /window truncated at scan limit \(3 requests read\)/, "days mode reports only what it read");
-  assert.ok(!days.includes("of 10 requested"), "days mode never compares against a request count");
-  const q = tmp();
-  fs.writeFileSync(q, multiStepVault(8, 10), "utf8");
-  const whole = getTokensSummary(q, { maxPrompts: 10, limit: 300 });
-  assert.ok(!whole.includes("truncated at scan limit"), "no marker when the whole file was read");
-  assert.equal(whole.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).length, 8);
-});
-
-test("days mode reports the scan cut as a read count, last mode as a shortfall", () => {
-  const p = tmp();
-  // 800 entries but only 8 requests: even the ceiling scan cannot reach the
-  // file's end, so the window is cut in both modes — only the wording differs.
-  fs.writeFileSync(p, multiStepVault(8, 100, { date: dayOffset(0) }), "utf8");
-  const days = getTokensSummary(p, { kind: "days", days: 7, maxPrompts: 10, limit: 300 });
-  assert.match(days, /window truncated at scan limit \((\d+) requests read\)/, "days mode names what it read");
-  const read = +days.match(/window truncated at scan limit \((\d+) requests read\)/)[1];
-  assert.ok(read > 0, `a count is present, got ${read}`);
-  assert.ok(!/\d+ of \d+ requested/.test(days), "days mode never compares against maxPrompts");
-  const last = getTokensSummary(p, { maxPrompts: 10, limit: 300 });
-  assert.ok(!last.includes("truncated at scan limit ("), "the paren form is days-only");
-  assert.match(last, /window truncated at scan limit: \d+ of 10 requested/, "last mode keeps the requested form");
-});
-
-test("a single hidden rollup is named in the singular", () => {
-  const p = tmp();
-  // 12 requests; the 11 newest span three sessions, and the oldest is the only
-  // request of its session, so the budget drops exactly one rollup.
-  const rows = [line("2026-10-18", "old", { session: "ses_old", prompt: "p0", time: "10:00:00" })];
-  for (let i = 0; i < 11; i++) rows.push(line("2026-10-18", `n${i}`, { session: `ses_${i % 3}`, prompt: `p${i + 1}`, time: `10:${String(i + 1).padStart(2, "0")}:00` }));
-  fs.writeFileSync(p, rows.join("\n"), "utf8");
-  const out = getTokensSummary(p, { maxPrompts: 12 });
-  assert.match(out, /\+1 session not shown\b/, "one hidden session is singular");
-  assert.ok(!out.includes("+1 sessions"), "no plural for a single session");
-});
-
-test("header session count is the window's, and cap-dropped rollups are disclosed", () => {
-  const p = tmp();
-  const rows = [];
-  // One request per session, so every dropped row also drops a rollup.
-  for (let i = 0; i < 15; i++) rows.push(line("2026-10-18", i, { prompt: `p${i}`, session: `ses_${i}`, time: `10:${String(i).padStart(2, "0")}:00` }));
-  fs.writeFileSync(p, rows.join("\n"), "utf8");
-  const out = getTokensSummary(p, { maxPrompts: 15 });
-  assert.match(out, /\| 15 sessions \|/, "counted from the window, not the printed rows");
-  const rolls = out.split("\n").filter((l) => l.startsWith("rollup "));
-  const shown = out.split("\n").filter((l) => /steps:\s*\d+ total:/.test(l)).length;
-  assert.equal(rolls.length, shown, "a rollup survives only with its row");
-  assert.ok(rolls.length < 15, "the cap really did drop rollups");
-  assert.ok(out.includes(`+${15 - rolls.length} sessions not shown`), "the dropped rollups are named");
-  assert.ok(out.split("\n").length <= 15, `${out.split("\n").length} lines`);
-  // The oldest request is cut by the scan, so its lone session has no rollup
-  // for a reason that is not the cap — it must not be counted as cap-dropped.
-  const q = tmp();
-  const cut = [];
-  for (let i = 0; i < 16; i++) cut.push(line("2026-10-18", i, { prompt: `c${i}`, session: `ses_${i}`, time: `10:${String(i).padStart(2, "0")}:00` }));
-  fs.writeFileSync(q, cut.join("\n"), "utf8");
-  const cutOut = getTokensSummary(q, { maxPrompts: 16, limit: 16 });
-  const cutRolls = cutOut.split("\n").filter((l) => l.startsWith("rollup ")).length;
-  assert.ok(cutOut.includes(`+${16 - cutRolls - 1} sessions not shown`), "partial-only session excluded from the count");
-  // Its session has no rollup because the scan cut it, not the cap.
-  const t = tmp();
-  fs.writeFileSync(t, [
-    line("2026-10-18", 0, { prompt: "c0", session: "ses_0", time: "10:00:00" }),
-    line("2026-10-18", 1, { prompt: "c1", session: "ses_1", time: "10:01:00" }),
-  ].join("\n"), "utf8");
-  const cutTwo = getTokensSummary(t, { maxPrompts: 2, limit: 2 });
-  assert.match(cutTwo, /c0\s+steps: 1 .*~partial/, "oldest request marked partial");
-  assert.match(cutTwo, /\| 2 sessions \|/, "both window sessions counted");
-  assert.ok(!cutTwo.includes("sessions not shown"), "a partial-only session is not reported as cap-dropped");
-});
