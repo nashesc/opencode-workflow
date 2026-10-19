@@ -19,7 +19,12 @@ const path = require("node:path");
 const CONFIG = path.join(__dirname, "..");
 const PROJECT = process.cwd();
 
-const INSTRUCTION_BUDGET = 25000;      // bytes, every auto-loaded instruction file
+// The ceiling is the steady state of a full window: 25 log entries in each of
+// decisions.md / errors.md / context.md, plus the AGENTS.md pair, concise,
+// clarify, profile and the project AGENTS.md. 26,000 still fails the
+// pre-audit state (27,762 bytes, a 46-entry log) and any log that grows past
+// its window.
+const INSTRUCTION_BUDGET = 26000;      // bytes, every auto-loaded instruction file
 const SKILL_DESCRIPTION_BUDGET = 1600; // chars, all skill frontmatter descriptions
 const AGENT_DESCRIPTION_BUDGET = 1200; // chars, all agent frontmatter descriptions
 const MEMORY_ENTRY_BUDGET = 25;        // entries per auto-loaded memory log
