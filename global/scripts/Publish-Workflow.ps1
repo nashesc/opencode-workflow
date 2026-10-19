@@ -197,6 +197,10 @@ foreach ($f in Get-ChildItem -LiteralPath (Join-Path $globalRoot 'scripts') -Fil
     $manifest += @{ src = $f.FullName; rel = ('global/scripts/' + $f.Name) }
 }
 # Project-template files (live workspace -> distro).
+# .opencode/memory/*.md is deliberately NOT carried: the distro keeps empty
+# scaffolds ("No decisions logged yet.") so a template user starts with their
+# own log instead of inheriting this project's history. Filling them from the
+# live workspace is a manual copy, never a publish.
 $manifest += @{ src = (Join-Path $WorkspaceRoot 'AGENTS.md'); rel = 'project-template/AGENTS.md' }
 $manifest += @{ src = (Join-Path $WorkspaceRoot 'opencode.jsonc'); rel = 'project-template/opencode.jsonc' }
 foreach ($f in Get-ChildItem -LiteralPath (Join-Path $WorkspaceRoot '.opencode\commands') -Filter '*.md' -File) {

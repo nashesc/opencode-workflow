@@ -29,7 +29,7 @@ Sync the live workflow sources to the `opencode-workflow/` distro copy, sanitize
     - `~/.config/opencode/scripts/*` (including `Publish-Workflow.ps1` itself and the sweep-safe `Publish-Workflow.sanitizer.test.ps1`, excluding `*.bak` and other dev-only `*.test.ps1` files) → `<dest>/global/scripts/`
     - `~/.config/opencode/opencode.jsonc` → `<dest>/global/opencode.jsonc` — **drift-guarded manual sync, never whole-file overwrite**: the distro file stays canonical for providers; the publisher fails closed if the carried sections (permissions, `subagent_depth`, MCP pins, `disabled_providers`, compaction, instructions) diverge from live — sync by hand, then re-run. `small_model` is NOT carried (live-machine override, not a shared default).
    - Workspace (`Default Project/` or current project root): `AGENTS.md`, `opencode.jsonc` (explicit-list hunk), `.opencode/commands/*`, `.opencode/plugins/token-report.js`, `tools/token-report/*.js` → `<dest>/project-template/` mirror paths.
-   - Never copied: `*.bak`, `node_modules/`, `.session-*`, `.pending-*`, `TokenUsage*.md`, `docs/`, vault content, and workspace `tools/` outside the `project-template/tools/` mirror.
+   - Never copied: `*.bak`, `node_modules/`, `.session-*`, `.pending-*`, `TokenUsage*.md`, `docs/`, vault content, workspace `.opencode/memory/` (the distro keeps empty memory scaffolds so a template user starts with their own log), and workspace `tools/` outside the `project-template/tools/` mirror.
 
 3. Sanitize (fail-closed — the script aborts before writing on any hit):
     - Live key sweep first: `$KEY_PATTERNS` (anchored, case-sensitive:
