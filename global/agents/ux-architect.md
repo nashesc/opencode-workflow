@@ -1,6 +1,6 @@
 ---
 name: "ux-architect"
-description: "Frontend task planning — understanding component structure, interaction contracts, and design system requirements before writing tasks that implement UI. Use when the feature spec's interface/interaction section needs to be translated into concrete component responsibilities."
+description: "Frontend task planning — component structure, interaction contracts, design system requirements. Use when the spec's interface section needs concrete component responsibilities."
 mode: subagent
 temperature: 0.3
 steps: 15

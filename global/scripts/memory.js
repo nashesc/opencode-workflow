@@ -4,6 +4,8 @@
 //   add <pref|constraint|decision|error> "<text>" [--why ..] [--scope user|project]
 //       [--project name] [--supersede <id>] [--force]
 //   recall "<query>" [--project name] [--limit 6] [--archive]
+//       Searches the vault, this project's .opencode/memory/*.md AND their
+//       *_archive.md siblings (the live files are a bounded window).
 //   brief  [--project name]     user profile + project next action (<=40 lines)
 //   init   [project]            create Projects/<name>/project.md + wip.md hubs (idempotent)
 //   sync                        regenerate profile.md + Memory.md index block
@@ -252,6 +254,11 @@ function sources(a) {
   const pdir = path.join(VAULT, "Projects");
   if (fs.existsSync(pdir)) for (const d of fs.readdirSync(pdir, { withFileTypes: true }).filter((x) => x.isDirectory())) for (const n of ["project", "wip"]) s.push({ f: path.join(pdir, d.name, `${n}.md`), kind: "note", proj: d.name });
   for (const f of ["decisions", "errors", "context"]) s.push({ f: path.join(process.cwd(), ".opencode", "memory", `${f}.md`), kind: "entry", local: true });
+  // A project's live memory files are a bounded window (25 entries); the
+  // archive holds the rest of the same log. Search it always, so archiving
+  // never makes a decision unreachable. Entries are deduped by id against the
+  // vault copies, and the local copy wins because it is the project's own log.
+  for (const f of ["decisions", "errors", "context"]) s.push({ f: path.join(process.cwd(), ".opencode", "memory", `${f}_archive.md`), kind: "entry", local: true });
   if (a.archive) for (const f of ["Decisions", "Errors", "Context"]) s.push({ f: path.join(VAULT, `${f}_archive.md`), kind: "entry" });
   return s;
 }

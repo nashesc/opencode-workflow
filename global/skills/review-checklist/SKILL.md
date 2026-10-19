@@ -1,6 +1,6 @@
 ---
 name: review-checklist
-description: What to check during a code review — architecture, readability, correctness, maintainability. Load when reviewing changes or when the reviewer agent runs.
+description: Code-review checklist — architecture, readability, correctness, maintainability. Load when reviewing changes or the reviewer agent runs.
 ---
 
 # Review Checklist

@@ -1,6 +1,6 @@
 ---
 name: test-pipeline
-description: Generic ordered-stage test pipeline guidance for any stack. Load when running tests or before merging, when no project-specific test-pipeline skill exists.
+description: Ordered-stage test pipeline guidance for any stack. Load when running tests or before merging, when no project-specific skill exists.
 ---
 
 # Test Pipeline (generic fallback)

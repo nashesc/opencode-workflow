@@ -1,6 +1,6 @@
 ---
 name: security-checklist
-description: Security categories to check during a security pass — injection, auth, secrets, data exposure. Load when running a security review or when the security agent runs.
+description: Security-pass checklist — injection, auth, secrets, data exposure. Load for a security review or when the security agent runs.
 ---
 
 # Security Checklist

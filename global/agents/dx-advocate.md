@@ -1,6 +1,6 @@
 ---
 name: "dx-advocate"
-description: "Build tooling, dev-server configuration, test infrastructure performance, and CI/CD pipeline efficiency. Use when the feature introduces changes that affect build times, HMR behavior, test execution speed, or developer workflow — to understand DX constraints and plan tasks that avoid introducing new friction."
+description: "Build tooling, dev-server config, test-infra performance, CI/CD efficiency. Use when a change affects build times, HMR, test execution speed, or developer workflow."
 mode: subagent
 temperature: 0.3
 steps: 15

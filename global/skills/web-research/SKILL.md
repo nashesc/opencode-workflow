@@ -1,6 +1,6 @@
 ---
 name: web-research
-description: Use only when the user explicitly asks to research external info (search the web, look something up, deep dive) or shares a non-GitHub URL to read. Not for code, local files, or GitHub repos.
+description: Only when the user explicitly asks to research external info (web search, look up, deep dive) or shares a non-GitHub URL to read. Not for code, local files, or GitHub repos.
 ---
 
 # Web Research (minimal)

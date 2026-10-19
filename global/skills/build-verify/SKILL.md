@@ -1,6 +1,6 @@
 ---
 name: build-verify
-description: Set checkable success criteria before non-trivial coding, then prove each with command output before saying done. Load for features, fixes, refactors.
+description: Set checkable success criteria, then prove each with command output before saying done. Load for features, fixes, refactors.
 ---
 
 # Build and Verify

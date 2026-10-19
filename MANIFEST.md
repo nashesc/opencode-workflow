@@ -4,7 +4,7 @@
 
 - Generated (UTC): 
 
-2026-10-19T17:55:23Z
+2026-10-19T19:39:28Z
 
 
 
@@ -74,6 +74,10 @@
 
 - `~/.config/opencode/instructions/concise.md` -> `global/instructions/concise.md`
 
+- `~/.config/opencode/instructions/memory-cli.md` -> `global/instructions/memory-cli.md`
+
+- `~/.config/opencode/scripts/context-budget.test.js` -> `global/scripts/context-budget.test.js`
+
 - `~/.config/opencode/scripts/memory.js` -> `global/scripts/memory.js`
 
 - `~/.config/opencode/scripts/memory.test.js` -> `global/scripts/memory.test.js`
@@ -120,4 +124,4 @@
 
 - `<workspace>/tools/token-report/vault-log.test.js` -> `project-template/tools/token-report/vault-log.test.js`
 
-- workspace HEAD: be34f1b
+- workspace HEAD: 359f5a8

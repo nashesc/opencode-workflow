@@ -1,6 +1,6 @@
 ---
 name: frontend-verify
-description: Verify UI changes in a running app - responsive widths, keyboard/focus, console errors, loading/empty/error states, basic a11y. Load after any frontend change.
+description: Verify UI in a running app - responsive widths, keyboard/focus, console errors, loading/empty/error states, a11y. Load after any frontend change.
 ---
 
 # Frontend Verify

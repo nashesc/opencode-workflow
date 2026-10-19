@@ -176,6 +176,18 @@ test("recall: entry mirrored in both the local and vault decisions file yields o
   assert.ok(lines[0].startsWith(`[${id}] .opencode/memory/`), lines[0]);
 });
 
+test("recall: a project's archived decision is still found (the live file is a bounded window)", () => {
+  const t = env();
+  fs.mkdirSync(path.join(t.cwd, ".opencode", "memory"), { recursive: true });
+  fs.writeFileSync(path.join(t.cwd, ".opencode", "memory", "decisions.md"), "# decisions\n\nEntries are prepended at the top (newest first), auto-archived after 25 entries.\n\n2026-01-02 \u2014 Kept the newest decision here\n");
+  fs.writeFileSync(path.join(t.cwd, ".opencode", "memory", "decisions_archive.md"), "# decisions Archive\n\nArchived entries (oldest first, append-only). This file is never auto-loaded.\n\n2025-11-08 \u2014 Retired the kubernetes helm setup for alpha\n");
+  const hits = t.run("recall", "kubernetes helm setup", "--limit", "15");
+  assert.match(hits.out, /Retired the kubernetes helm setup/, hits.out);
+  assert.match(hits.out, /\.opencode\/memory\/decisions_archive\.md/, hits.out);
+  // the live file's own entries still come back
+  assert.match(t.run("recall", "newest decision kept").out, /Kept the newest decision here/);
+});
+
 test("sync: index block links hubs, is idempotent, preserves other Memory.md content", () => {
   const t = env();
   fs.mkdirSync(path.join(t.vault, "Projects", "alpha"), { recursive: true });

@@ -1,6 +1,6 @@
 ---
 name: debugging
-description: Root-cause debugging loop - reproduce, read the real error, isolate, test hypotheses one at a time, fix with a regression test. Load for bugs, failing tests, flaky behavior.
+description: Root-cause loop - reproduce, read the real error, isolate, test one hypothesis at a time, fix with a regression test. Load for bugs, failing tests, flaky behavior.
 ---
 
 # Debugging

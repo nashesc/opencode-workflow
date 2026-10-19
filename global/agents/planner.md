@@ -1,6 +1,6 @@
 ---
 name: "Planner"
-description: "Breaks down feature specifications into TDD implementation plans with sequenced, committable tasks."
+description: "Breaks down feature specs into TDD implementation plans with sequenced, committable tasks."
 mode: all
 temperature: 0.3
 permission:

@@ -1,5 +1,5 @@
 ---
-description: Reviews code changes for quality, architecture, and maintainability. Read-only — cannot edit files.
+description: Reviews code changes for quality, architecture, maintainability. Read-only — cannot edit files.
 mode: subagent
 temperature: 0.1
 steps: 15

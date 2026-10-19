@@ -1,6 +1,6 @@
 ---
 name: "database-engineer"
-description: "Schema design, query patterns, migration strategy, and data modeling decisions. Use when the feature involves data persistence, new tables, complex queries, or changes to the existing data model."
+description: "Schema, query patterns, migrations, data modeling. Use when the feature touches persistence, new tables, complex queries, or the existing data model."
 mode: subagent
 temperature: 0.3
 steps: 15

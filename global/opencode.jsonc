@@ -69,10 +69,16 @@
     "obsidian_manage_tags": "deny"
   },
 
+  // V2 compaction keys. The V1 "prune" and "reserved" keys are gone in
+  // v2.0.26: "prune" is dropped (old tool output is no longer pruned away),
+  // and "reserved" is migrated to "buffer". "keep.tokens" is the recent
+  // conversation preserved beside the summary (default 15000).
   "compaction": {
     "auto": true,
-    "prune": true,
-    "reserved": 8000
+    "keep": {
+      "tokens": 15000
+    },
+    "buffer": 8000
   },
   "subagent_depth": 2,
   "mcp": {

@@ -1,5 +1,5 @@
 ---
-description: Runs the project's test pipeline and reports results. Can execute test/lint commands; asks before editing files.
+description: Runs the project test pipeline and reports results. Can run test/lint commands; asks before editing files.
 mode: subagent
 temperature: 0.2
 steps: 30

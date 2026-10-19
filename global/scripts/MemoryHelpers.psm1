@@ -27,7 +27,7 @@ Counts memory entries matching the standard date format.
 
 .DESCRIPTION
 Counts lines matching the pattern: YYYY-MM-DD — summary — why
-Used to determine when archive threshold (50 entries) is reached.
+Used to determine when archive threshold (25 entries) is reached.
 
 .PARAMETER FilePath
 Path to the memory file (decisions.md or errors.md)
@@ -121,27 +121,27 @@ function Add-MemoryEntryTop {
 Archives oldest entries when count exceeds threshold.
 
 .DESCRIPTION
-When a memory file has >50 entries, moves the oldest N entries to *_archive.md,
-keeping the live file at ≤50 entries. Archive file uses append-only, oldest-first order.
+When a memory file has >25 entries, moves the oldest N entries to *_archive.md,
+keeping the live file at ≤25 entries. Archive file uses append-only, oldest-first order.
 
 .PARAMETER FilePath
 Path to the memory file (decisions.md or errors.md)
 
 .PARAMETER Threshold
-Entry count threshold (default: 50)
+Entry count threshold (default: 25)
 
 .PARAMETER ArchivePath
 Optional explicit archive path; defaults to FilePath with _archive suffix
 
 .EXAMPLE
-Invoke-MemoryArchive "C:\path\to\decisions.md" -Threshold 50
+Invoke-MemoryArchive "C:\path\to\decisions.md" -Threshold 25
 #>
 function Invoke-MemoryArchive {
     param(
         [Parameter(Mandatory = $true)]
         [string]$FilePath,
         
-        [int]$Threshold = 50,
+        [int]$Threshold = 25,
         
         [string]$ArchivePath = ""
     )

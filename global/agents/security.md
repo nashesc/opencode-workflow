@@ -1,5 +1,5 @@
 ---
-description: Reviews code for security issues — injection points, auth gaps, credential exposure, OWASP-style risks. Read-only — cannot edit files.
+description: Reviews code for security issues — injection, auth gaps, credential exposure, OWASP risks. Read-only — cannot edit files.
 mode: subagent
 temperature: 0.1
 steps: 15

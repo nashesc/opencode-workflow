@@ -4,7 +4,7 @@ description: Append an architectural decision to decisions.md
 
 If `.opencode/memory/decisions.md` doesn't exist yet in this project,
 create it first with a `# Decisions` heading and a one-line note that
-entries are prepended at the top (newest first), auto-archived after 50 entries.
+entries are prepended at the top (newest first), auto-archived after 25 entries.
 
 Then prepend a new entry to `.opencode/memory/decisions.md` (insert
 immediately after header, before existing entries), format:
@@ -16,10 +16,10 @@ Import-Module "$env:USERPROFILE\.config\opencode\scripts\MemoryHelpers.psm1" -Fo
 Get-MemoryEntryCount ".opencode\memory\decisions.md"
 ```
 
-If count exceeds 50, invoke archive logic:
+If count exceeds 25, invoke archive logic:
 ```powershell
 Import-Module "$env:USERPROFILE\.config\opencode\scripts\MemoryHelpers.psm1" -Force
-Invoke-MemoryArchive ".opencode\memory\decisions.md" -Threshold 50
+Invoke-MemoryArchive ".opencode\memory\decisions.md" -Threshold 25
 ```
 
 Then mirror to durable global memory (file-direct, no MCP; dedupes, tags the

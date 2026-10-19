@@ -4,7 +4,7 @@ description: Append a new error, or update an existing entry's Status field, in 
 
 If `.opencode/memory/errors.md` doesn't exist yet in this project, create
 it first with an `# Errors` heading and a one-line note that entries are
-prepended at the top (newest first), auto-archived after 50 entries;
+prepended at the top (newest first), auto-archived after 25 entries;
 resolving one means editing its Status field in place, not moving or deleting it.
 
 For a new error: prepend a new entry to `.opencode/memory/errors.md` (insert
@@ -21,10 +21,10 @@ Import-Module "$env:USERPROFILE\.config\opencode\scripts\MemoryHelpers.psm1" -Fo
 Get-MemoryEntryCount ".opencode\memory\errors.md"
 ```
 
-If count exceeds 50, invoke archive logic:
+If count exceeds 25, invoke archive logic:
 ```powershell
 Import-Module "$env:USERPROFILE\.config\opencode\scripts\MemoryHelpers.psm1" -Force
-Invoke-MemoryArchive ".opencode\memory\errors.md" -Threshold 50
+Invoke-MemoryArchive ".opencode\memory\errors.md" -Threshold 25
 ```
 
 Then mirror a NEW error to durable global memory (file-direct, no MCP; dedupes,
