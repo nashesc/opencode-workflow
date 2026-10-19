@@ -14,6 +14,8 @@ const FLAG_LINES = 1;
 // in ≈ cache-read means one side may be reported twice; 1% tolerance so
 // rounding noise doesn't trip the flag.
 const DBL_TOLERANCE = 0.01;
+// Below this cache share on its first step, a request counts as cold-start.
+const COLD_SHARE = 0.05;
 const DEFAULT_ROWS = 10;
 // Historical scan floor: never read fewer than this many entries, and never
 // more than the window can use. SCAN_CEIL doubles as the hard cap on parsed
@@ -40,10 +42,23 @@ function cutoffDate(days) {
 }
 
 // in ≈ cache-read means one side may be reported twice; 1% tolerance so
-// rounding noise doesn't trip the flag.
-function possibleDoubleCount(g) {
-  const hi = Math.max(g.input, g.cacheRead);
-  return hi > 0 && Math.abs(g.input - g.cacheRead) / hi <= DBL_TOLERANCE;
+// rounding noise doesn't trip the flag. Per STEP, not per request: a request
+// that starts cold (all in, no cache) and then warms (all cache) has two
+// large-but-different values, and their sums can land within 1% of each other
+// without anything being counted twice.
+function stepDoubleCount(g) {
+  return g.pairs.some(([fresh, cached]) => {
+    if (fresh <= 0 || cached <= 0) return false;
+    const hi = Math.max(fresh, cached);
+    return Math.abs(fresh - cached) / hi <= DBL_TOLERANCE;
+  });
+}
+
+// A request is cold-start when its first step reads almost nothing from cache
+// (share < 5% of that step's own context); K is the fresh input it did read.
+function isColdStart(g) {
+  const ctx = g.firstIn + g.firstCacheRead;
+  return ctx > 0 && g.firstCacheRead < COLD_SHARE * ctx;
 }
 
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
@@ -70,14 +85,21 @@ function buildGroups(entries) {
     if (!g) {
       g = { key, prompt: e.promptID && e.promptID !== "unknown" ? e.promptID : e.messageID,
         session: e.sessionID, model: e.model,
-        firstKey: e.sortKey, firstAt: e.at, lastKey: e.sortKey, lastAt: e.at,
+        firstKey: e.sortKey, firstAt: e.at, firstIn: e.input, firstCacheRead: e.cacheRead,
+        lastKey: e.sortKey, lastAt: e.at,
+        pairs: [],
         steps: 0, total: 0, input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0 };
       byKey.set(key, g); groups.push(g);
     }
+    // Per-step in/cache-read pairs: the double-count and cold-start rules are
+    // step-local, and the sums alone cannot tell a repeat from a cold miss.
+    g.pairs.push([e.input, e.cacheRead]);
     g.steps += 1;
     g.total += e.total; g.input += e.input; g.output += e.output; g.reasoning += e.reasoning;
     g.cacheRead += e.cacheRead; g.cacheWrite += e.cacheWrite;
-    if (e.sortKey < g.firstKey) { g.firstKey = e.sortKey; g.firstAt = e.at; }
+    if (e.sortKey < g.firstKey) {
+      g.firstKey = e.sortKey; g.firstAt = e.at; g.firstIn = e.input; g.firstCacheRead = e.cacheRead;
+    }
     if (e.sortKey > g.lastKey) { g.lastKey = e.sortKey; g.lastAt = e.at; }
   }
   groups.sort(newestFirst);
@@ -178,9 +200,10 @@ function getTokensSummary(vaultPath, opts = {}) {
       rows = rows.slice(0, rows.length - 1);
       roll = rollupFor(rows, windowGroups);
     }
-    const flagged = rows.filter(possibleDoubleCount);
+    const flagged = rows.filter(stepDoubleCount);
+    // Markers ride the row line, so the cold-start tag costs no extra line.
     const rowLines = rows.map((g) =>
-      `${pad(g.lastAt, 19)} ${pad(g.prompt, 30)} steps:${padL(g.steps, 2)} total:${padL(fmt(g.total), 11)} cache-read/step:${padL(fmt(g.cacheRead / g.steps), 9)} fresh-in/step:${padL(fmt(g.input / g.steps), 9)}${possibleDoubleCount(g) ? " !dbl" : ""}${g.partial ? " ~partial" : ""}`);
+      `${pad(g.lastAt, 19)} ${pad(g.prompt, 30)} steps:${padL(g.steps, 2)} total:${padL(fmt(g.total), 11)} cache-read/step:${padL(fmt(g.cacheRead / g.steps), 9)} fresh-in/step:${padL(fmt(g.input / g.steps), 9)}${stepDoubleCount(g) ? " !dbl" : ""}${g.partial ? " ~partial" : ""}${isColdStart(g) ? ` cold:${fmt(g.firstIn)}` : ""}`);
     if (rows.length < wanted) rowLines.push(`+${wanted - rows.length} more rows (oldest of ${groups.length} requests)`);
     const hidden = hiddenSessions();
     if (hidden > 0) rowLines.push(`+${hidden} session${hidden === 1 ? "" : "s"} not shown`);

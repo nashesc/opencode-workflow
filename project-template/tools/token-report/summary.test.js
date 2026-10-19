@@ -126,6 +126,58 @@ test("rows near but not within 1% are not flagged", () => {
   assert.ok(!out.includes("dbl"), "5% apart is not a double-count");
 });
 
+test("a cold-then-warm request is not a double-count and is marked cold", () => {
+  const p = tmp();
+  // Real shape, from prompt msg_15258e0d1001OAMYpdkRYK3pcK (2026-10-19 04:09):
+  // step 1 reads nothing from cache, step 2 reads nearly all of it. The sums
+  // (62,474 in vs 61,956 cache-read) sit 0.8% apart but no step repeats.
+  fs.writeFileSync(p, [
+    line("2026-10-19", 1, { prompt: "msg_coldwarm", input: 61676, cacheRead: 140, time: "04:09:26" }),
+    line("2026-10-19", 2, { prompt: "msg_coldwarm", input: 798, cacheRead: 61816, time: "04:09:32" }),
+  ].join("\n"), "utf8");
+  const out = getTokensSummary(p);
+  assert.ok(!out.includes("!dbl"), "no step is self-similar, so no flag");
+  assert.ok(!out.includes("possible double-count"), "flag line stays away");
+  assert.match(out, /msg_coldwarm.*cold:61,676/, "the cold start names the first step's fresh input");
+  assert.ok(out.split("\n").length <= 15, `${out.split("\n").length} lines`);
+});
+
+test("one step with in within 1% of its own cache-read still flags", () => {
+  const p = tmp();
+  // Two warm steps plus one self-similar step: the request-level sums are far
+  // apart, so only a per-step check finds this.
+  fs.writeFileSync(p, [
+    line("2026-10-18", 1, { prompt: "x", input: 1000, cacheRead: 995, time: "10:00:00" }),
+    line("2026-10-18", 2, { prompt: "x", input: 200, cacheRead: 900, time: "10:00:10" }),
+    line("2026-10-18", 3, { prompt: "x", input: 4000, cacheRead: 900, time: "10:00:20" }),
+  ].join("\n"), "utf8");
+  const out = getTokensSummary(p);
+  assert.match(out, /!dbl/, "the 1000/995 step is flagged even though the sums differ");
+  assert.match(out, /flag: possible double-count — in within 1% of cache-read on 1 request/);
+});
+
+test("cold marker tracks the 5% cache share of the first step", () => {
+  const p = tmp();
+  const build = (input, cacheRead) => fs.writeFileSync(p, [
+    line("2026-10-18", 1, { prompt: "x", input, cacheRead, time: "10:00:00" }),
+    line("2026-10-18", 2, { prompt: "x", input: 50, cacheRead: 900, time: "10:00:10" }),
+  ].join("\n"), "utf8");
+  build(1000, 0);
+  assert.match(getTokensSummary(p), /cold:1,000/, "no cache read at all is cold");
+  build(100, 900);
+  assert.ok(!getTokensSummary(p).includes("cold:"), "90% cache share is warm");
+  build(95, 5);
+  assert.ok(!getTokensSummary(p).includes("cold:"), "exactly 5% is not under it");
+  build(96, 4);
+  assert.match(getTokensSummary(p), /cold:96/, "3.9% cache share is cold");
+  // The earliest step decides, whatever order the vault lists them in.
+  fs.writeFileSync(p, [
+    line("2026-10-18", 2, { prompt: "x", input: 50, cacheRead: 900, time: "10:00:10" }),
+    line("2026-10-18", 1, { prompt: "x", input: 1000, cacheRead: 0, time: "10:00:00" }),
+  ].join("\n"), "utf8");
+  assert.match(getTokensSummary(p), /cold:1,000/, "cold start found in an ascending vault");
+});
+
 test("output stays under 15 lines with a full window plus flag", () => {
   const p = tmp();
   const rows = [];
